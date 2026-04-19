@@ -17,6 +17,10 @@ export interface Category {
   created_at: string
 }
 
+export interface CategoryWithCount extends Category {
+  device_count: number
+}
+
 export interface Device {
   id: string
   name: string

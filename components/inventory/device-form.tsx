@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,16 @@ export function DeviceForm({ categories, device, isAdmin, prefill }: DeviceFormP
     location: device?.location ?? '',
     notes: device?.notes ?? '',
   })
+
+  useEffect(() => {
+    if (prefill) {
+      setForm(prev => ({
+        ...prev,
+        ...(prefill.name && { name: prefill.name }),
+        ...(prefill.serial_number && { serial_number: prefill.serial_number }),
+      }))
+    }
+  }, [prefill])
 
   function set(key: string, value: string | number) {
     setForm(prev => ({ ...prev, [key]: value }))

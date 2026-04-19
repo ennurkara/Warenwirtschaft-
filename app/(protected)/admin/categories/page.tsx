@@ -50,12 +50,12 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-6 max-w-lg">
       <h1 className="text-2xl font-semibold">Kategorien</h1>
-      <form onSubmit={handleAdd} className="flex gap-2">
+      <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex-1 space-y-1">
           <Label htmlFor="new-cat">Neue Kategorie</Label>
           <Input id="new-cat" value={newName} onChange={e => setNewName(e.target.value)} placeholder="z.B. Headset" />
         </div>
-        <Button type="submit" disabled={isLoading} className="self-end">Hinzufügen</Button>
+        <Button type="submit" disabled={isLoading}>Hinzufügen</Button>
       </form>
       <div className="rounded-md border bg-white divide-y">
         {categories.map(c => (

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DeviceCard } from '@/components/inventory/device-card'
 import { getStatusLabel, getConditionLabel, formatDate } from '@/lib/utils'
 import type { Device, Category, DeviceStatus } from '@/lib/types'
 
@@ -23,9 +24,10 @@ interface DeviceListProps {
   canAdd: boolean
   hideCategoryFilter?: boolean
   hideHeading?: boolean
+  emptyMessage?: string
 }
 
-export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hideHeading }: DeviceListProps) {
+export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hideHeading, emptyMessage = 'Keine Geräte gefunden.' }: DeviceListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -51,16 +53,18 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hi
           )}
         </div>
       )}
-      <div className="flex gap-3 flex-wrap">
+
+      {/* Filter bar — stacks vertically on mobile */}
+      <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-3">
         <Input
           placeholder="Nach Name oder Seriennummer suchen..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="w-full md:max-w-sm"
         />
         {!hideCategoryFilter && (
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full md:w-48">
               <SelectValue placeholder="Kategorie" />
             </SelectTrigger>
             <SelectContent>
@@ -72,7 +76,7 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hi
           </Select>
         )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -84,7 +88,19 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hi
           </SelectContent>
         </Select>
       </div>
-      <div className="rounded-md border bg-white">
+
+      {/* Mobile card list */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {filtered.length === 0 && (
+          <p className="text-slate-500 text-sm py-8 text-center">{emptyMessage}</p>
+        )}
+        {filtered.map(device => (
+          <DeviceCard key={device.id} device={device} />
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -102,9 +118,7 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hi
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-slate-500 py-8">
-                  {hideCategoryFilter
-                    ? 'Keine Geräte in dieser Kategorie.'
-                    : 'Keine Geräte gefunden.'}
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

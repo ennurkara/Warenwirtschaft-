@@ -21,10 +21,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar profile={profile as Profile} />
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
         {children}
       </main>
-      <ChatFab />
+      <div className="hidden md:block">
+        <ChatFab />
+      </div>
     </div>
   )
 }

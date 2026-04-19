@@ -20,15 +20,15 @@ export default async function MovementsPage() {
           <p className="text-slate-500 text-sm p-6">Keine Bewegungen vorhanden.</p>
         )}
         {(movements as DeviceMovement[]).map(m => (
-          <div key={m.id} className="flex items-center gap-4 px-4 py-3 text-sm">
-            <Badge variant={m.action === 'entnahme' ? 'destructive' : 'default'}>
+          <div key={m.id} className="flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4">
+            <Badge variant={m.action === 'entnahme' ? 'destructive' : 'default'} className="self-start sm:self-auto">
               {m.action === 'entnahme' ? 'Entnahme' : m.action === 'einlagerung' ? 'Einlagerung' : 'Defekt'}
             </Badge>
             <span className="font-medium">{m.device?.name}</span>
             <span className="text-slate-500">{m.quantity}x</span>
             <span className="text-slate-500">von {m.profile?.full_name}</span>
             {m.note && <span className="text-slate-400 italic">&ldquo;{m.note}&rdquo;</span>}
-            <span className="ml-auto text-slate-400">{formatDate(m.created_at)}</span>
+            <span className="sm:ml-auto text-slate-400">{formatDate(m.created_at)}</span>
           </div>
         ))}
       </div>

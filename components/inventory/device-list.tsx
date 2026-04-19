@@ -21,9 +21,10 @@ interface DeviceListProps {
   devices: Device[]
   categories: Category[]
   canAdd: boolean
+  hideCategoryFilter?: boolean
 }
 
-export function DeviceList({ devices, categories, canAdd }: DeviceListProps) {
+export function DeviceList({ devices, categories, canAdd, hideCategoryFilter }: DeviceListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -54,17 +55,19 @@ export function DeviceList({ devices, categories, canAdd }: DeviceListProps) {
           onChange={e => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Kategorie" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Kategorien</SelectItem>
-            {categories.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!hideCategoryFilter && (
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Kategorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Kategorien</SelectItem>
+              {categories.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />

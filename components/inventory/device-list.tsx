@@ -22,9 +22,10 @@ interface DeviceListProps {
   categories: Category[]
   canAdd: boolean
   hideCategoryFilter?: boolean
+  hideHeading?: boolean
 }
 
-export function DeviceList({ devices, categories, canAdd, hideCategoryFilter }: DeviceListProps) {
+export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hideHeading }: DeviceListProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -40,14 +41,16 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter }: 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Inventar</h1>
-        {canAdd && (
-          <Link href="/inventory/new">
-            <Button>Gerät hinzufügen</Button>
-          </Link>
-        )}
-      </div>
+      {!hideHeading && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Inventar</h1>
+          {canAdd && (
+            <Link href="/inventory/new">
+              <Button>Gerät hinzufügen</Button>
+            </Link>
+          )}
+        </div>
+      )}
       <div className="flex gap-3 flex-wrap">
         <Input
           placeholder="Nach Name oder Seriennummer suchen..."

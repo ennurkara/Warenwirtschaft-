@@ -102,7 +102,9 @@ export function DeviceList({ devices, categories, canAdd, hideCategoryFilter, hi
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-slate-500 py-8">
-                  Keine Geräte gefunden.
+                  {hideCategoryFilter
+                    ? 'Keine Geräte in dieser Kategorie.'
+                    : 'Keine Geräte gefunden.'}
                 </TableCell>
               </TableRow>
             )}

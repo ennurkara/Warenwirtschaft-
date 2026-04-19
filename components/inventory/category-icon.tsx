@@ -1,5 +1,6 @@
+import React from 'react'
 import {
-  CashRegister,
+  Store,
   Printer,
   Scan,
   Cable,
@@ -9,10 +10,11 @@ import {
   Network,
   Package,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  'cash-register': CashRegister,
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>
+
+const ICON_MAP: Record<string, IconComponent> = {
+  'cash-register': Store,
   'printer': Printer,
   'scan': Scan,
   'cable': Cable,
@@ -29,7 +31,7 @@ interface CategoryIconProps {
 
 export function CategoryIcon({ name, className }: CategoryIconProps) {
   const Icon = (name && ICON_MAP[name]) ?? Package
-  return <Icon className={className} />
+  return React.createElement(Icon, { className })
 }
 
 export { Package as AllDevicesIcon }

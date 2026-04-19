@@ -87,7 +87,7 @@ export function DeviceForm({ categories, device, isAdmin, prefill }: DeviceFormP
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2 col-span-2">
           <Label htmlFor="name">Gerätename *</Label>
           <Input id="name" value={form.name} onChange={e => set('name', e.target.value)} required />

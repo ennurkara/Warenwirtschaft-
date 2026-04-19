@@ -4,11 +4,59 @@
 import { POST } from '@/app/api/chat/route'
 import { NextRequest } from 'next/server'
 
-global.fetch = jest.fn()
+// Set env vars before module loads
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+process.env.OPENAI_API_KEY = 'test-openai-key'
+
+// Mock OpenAI
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ reply: 'Ihr habt 3 Drucker im Lager.' }),
+              },
+            },
+          ],
+        }),
+      },
+    },
+  }))
+})
+
+// Mock Supabase client
+const mockDevices = [
+  { name: 'Drucker', quantity: 3, status: 'lager', condition: 'neu', location: 'Lager', serial_number: 'SN1', categories: { name: 'Drucker' } },
+]
+
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    from: (table: string) => {
+      if (table === 'devices') {
+        return {
+          select: () => ({
+            neq: () => ({
+              order: () => Promise.resolve({ data: mockDevices }),
+            }),
+          }),
+        }
+      }
+      return {
+        select: () => ({
+          order: () => ({
+            limit: () => Promise.resolve({ data: [] }),
+          }),
+        }),
+      }
+    },
+  }),
+}))
 
 describe('POST /api/chat', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('returns 400 if no message provided', async () => {
     const req = new NextRequest('http://localhost/api/chat', {
       method: 'POST',
@@ -19,11 +67,7 @@ describe('POST /api/chat', () => {
     expect(res.status).toBe(400)
   })
 
-  it('forwards message to n8n and returns reply', async () => {
-    ;(fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ reply: 'Ihr habt 3 Drucker im Lager.' }),
-    })
+  it('queries Supabase and OpenAI, returns reply', async () => {
     const req = new NextRequest('http://localhost/api/chat', {
       method: 'POST',
       body: JSON.stringify({ message: 'Wie viele Drucker?' }),

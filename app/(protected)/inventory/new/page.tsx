@@ -9,8 +9,7 @@ import type { Category, OcrResult } from '@/lib/types'
 
 export default function NewDevicePage() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [prefill, setPrefill] = useState<{ name?: string; serial_number?: string }>({})
+  const [prefill, setPrefill] = useState<{ serial_number?: string }>({})
   const router = useRouter()
   const supabase = createClient()
 
@@ -19,7 +18,6 @@ export default function NewDevicePage() {
       const { data: { user } } = await supabase.auth.getUser()
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
       if (profile?.role === 'viewer') { router.push('/inventory'); return }
-      setIsAdmin(profile?.role === 'admin')
       const { data: cats } = await supabase.from('categories').select('*').order('name')
       setCategories(cats ?? [])
     }
@@ -27,7 +25,7 @@ export default function NewDevicePage() {
   }, [])
 
   function handleOcrResult(result: OcrResult) {
-    setPrefill({ name: result.name ?? undefined, serial_number: result.serial_number ?? undefined })
+    setPrefill({ serial_number: result.serial_number ?? undefined })
   }
 
   return (
@@ -37,7 +35,7 @@ export default function NewDevicePage() {
       {Object.keys(prefill).length > 0 && (
         <p className="text-sm text-green-600">Daten per OCR erkannt — bitte prüfen und bestätigen.</p>
       )}
-      <DeviceForm categories={categories} isAdmin={isAdmin} prefill={prefill} />
+      <DeviceForm categories={categories} prefill={prefill} />
     </div>
   )
 }

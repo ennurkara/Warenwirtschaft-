@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { fetchDevices } from '@/lib/inventory/queries'
 import { CategoryGrid } from '@/components/inventory/category-grid'
 import { CategoryDeviceList } from '@/components/inventory/category-device-list'
-import type { Device, Category, CategoryWithCount, Profile } from '@/lib/types'
+import type { Category, CategoryWithCount, Profile } from '@/lib/types'
 
 interface PageProps {
   searchParams: Promise<{ category?: string }>
@@ -19,13 +20,18 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   if (!categoryId) {
     const [{ data: categories }, { data: devices }] = await Promise.all([
       supabase.from('categories').select('*').order('name'),
-      supabase.from('devices').select('category_id'),
+      supabase.from('devices').select('model_id'),
     ])
 
-    const countMap: Record<string, number> = {}
-    for (const d of devices ?? []) {
-      if (d.category_id) {
-        countMap[d.category_id] = (countMap[d.category_id] ?? 0) + 1
+    // Count devices per category via models
+    const modelIds = (devices ?? []).map(d => d.model_id).filter(Boolean)
+    let countMap: Record<string, number> = {}
+    if (modelIds.length > 0) {
+      const { data: models } = await supabase.from('models').select('id, category_id').in('id', modelIds)
+      for (const m of models ?? []) {
+        if (m.category_id) {
+          countMap[m.category_id] = (countMap[m.category_id] ?? 0) + 1
+        }
       }
     }
 
@@ -44,25 +50,26 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   }
 
   if (categoryId === 'all') {
-    const [{ data: devices }, { data: categories }] = await Promise.all([
-      supabase.from('devices').select('*, category:categories(*)').order('created_at', { ascending: false }),
+    const [devices, { data: categories }] = await Promise.all([
+      fetchDevices(supabase),
       supabase.from('categories').select('*').order('name'),
     ])
 
     return (
       <CategoryDeviceList
-        devices={(devices ?? []) as Device[]}
+        devices={devices}
         categories={(categories ?? []) as Category[]}
         canAdd={canAdd}
         categoryName="Alle Geräte"
+        activeCategoryName="Alle Geräte"
         hideCategoryFilter={false}
       />
     )
   }
 
-  const [{ data: category }, { data: devices }, { data: categories }] = await Promise.all([
+  const [{ data: category }, devices, { data: categories }] = await Promise.all([
     supabase.from('categories').select('*').eq('id', categoryId).single(),
-    supabase.from('devices').select('*, category:categories(*)').eq('category_id', categoryId).order('created_at', { ascending: false }),
+    fetchDevices(supabase, { categoryId }),
     supabase.from('categories').select('*').order('name'),
   ])
 
@@ -72,10 +79,11 @@ export default async function InventoryPage({ searchParams }: PageProps) {
 
   return (
     <CategoryDeviceList
-      devices={(devices ?? []) as Device[]}
+      devices={devices}
       categories={(categories ?? []) as Category[]}
       canAdd={canAdd}
       categoryName={category.name}
+      activeCategoryName={category.name}
       hideCategoryFilter
       emptyMessage="Keine Geräte in dieser Kategorie."
     />

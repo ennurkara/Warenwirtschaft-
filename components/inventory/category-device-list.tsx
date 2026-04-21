@@ -10,6 +10,7 @@ interface CategoryDeviceListProps {
   categories: Category[]
   canAdd: boolean
   categoryName: string
+  activeCategoryName?: string
   hideCategoryFilter: boolean
   emptyMessage?: string
 }
@@ -19,6 +20,7 @@ export function CategoryDeviceList({
   categories,
   canAdd,
   categoryName,
+  activeCategoryName,
   hideCategoryFilter,
   emptyMessage,
 }: CategoryDeviceListProps) {
@@ -43,6 +45,7 @@ export function CategoryDeviceList({
         devices={devices}
         categories={categories}
         canAdd={canAdd}
+        activeCategoryName={activeCategoryName ?? categoryName}
         hideCategoryFilter={hideCategoryFilter}
         hideHeading
         emptyMessage={emptyMessage}

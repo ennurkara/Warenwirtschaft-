@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchDevice } from '@/lib/inventory/queries'
 import { DeviceForm } from '@/components/inventory/device-form'
+import { SellDialog } from '@/components/inventory/sell-dialog'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency, getStatusLabel } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
@@ -46,9 +47,14 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
             {categoryName} · {manufacturerName}
           </p>
         </div>
-        <Badge className={STATUS_COLORS[displayStatus]}>
-          {getStatusLabel(displayStatus)}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {!device.sale_item && (device.status === 'lager' || device.status === 'reserviert') && (
+            <SellDialog deviceId={device.id} />
+          )}
+          <Badge className={STATUS_COLORS[displayStatus]}>
+            {getStatusLabel(displayStatus)}
+          </Badge>
+        </div>
       </div>
 
       {device.photo_url && (

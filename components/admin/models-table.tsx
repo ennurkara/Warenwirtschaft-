@@ -8,13 +8,16 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
-import type { Manufacturer, Category, Model } from '@/lib/types'
+import type { Manufacturer, Category, Model, Supplier } from '@/lib/types'
+
+const NO_SUPPLIER = '__none__'
 
 export function ModelsTable() {
   const supabase = createClient()
   const [models, setModels] = useState<Model[]>([])
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [form, setForm] = useState({
     manufacturer_id: '',
     category_id: '',
@@ -26,12 +29,17 @@ export function ModelsTable() {
   })
 
   async function refresh() {
-    const { data: m } = await supabase.from('models').select('*, manufacturer:manufacturers(*), category:categories(*)').order('modellname')
+    const { data: m } = await supabase
+      .from('models')
+      .select('*, manufacturer:manufacturers(*), category:categories(*), default_supplier:suppliers!default_supplier_id(*)')
+      .order('modellname')
     setModels((m ?? []) as Model[])
     const { data: mf } = await supabase.from('manufacturers').select('*').order('name')
     setManufacturers(mf ?? [])
     const { data: c } = await supabase.from('categories').select('*').order('name')
     setCategories(c ?? [])
+    const { data: s } = await supabase.from('suppliers').select('*').order('name')
+    setSuppliers(s ?? [])
   }
   useEffect(() => { refresh() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
 
@@ -57,6 +65,14 @@ export function ModelsTable() {
     const { error } = await supabase.from('models').update({ [field]: value }).eq('id', id)
     if (error) { toast.error('Speichern fehlgeschlagen', { description: error.message }); return }
     setModels(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m))
+  }
+
+  async function updateSupplier(id: string, raw: string) {
+    const value = raw === NO_SUPPLIER ? null : raw
+    const { error } = await supabase.from('models').update({ default_supplier_id: value }).eq('id', id)
+    if (error) { toast.error('Lieferant speichern fehlgeschlagen', { description: error.message }); return }
+    const supplier = value ? suppliers.find(s => s.id === value) ?? null : null
+    setModels(prev => prev.map(m => m.id === id ? { ...m, default_supplier_id: value, default_supplier: supplier } : m))
   }
 
   async function remove(id: string) {
@@ -95,6 +111,7 @@ export function ModelsTable() {
             <TableHead>Hersteller</TableHead><TableHead>Kategorie</TableHead>
             <TableHead>Modell</TableHead><TableHead>Variante</TableHead><TableHead>Version</TableHead>
             <TableHead className="w-28">EK (€)</TableHead><TableHead className="w-28">VK (€)</TableHead>
+            <TableHead className="w-48">Lieferant</TableHead>
             <TableHead className="w-20" />
           </TableRow></TableHeader>
           <TableBody>
@@ -124,6 +141,18 @@ export function ModelsTable() {
                     onBlur={e => { if (e.target.value !== (m.default_vk?.toString() ?? '')) updatePrice(m.id, 'default_vk', e.target.value) }}
                     className="h-8"
                   />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={m.default_supplier_id ?? NO_SUPPLIER}
+                    onValueChange={v => updateSupplier(m.id, v)}
+                  >
+                    <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_SUPPLIER}>—</SelectItem>
+                      {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell><Button variant="outline" size="sm" onClick={() => remove(m.id)}>Löschen</Button></TableCell>
               </TableRow>

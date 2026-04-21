@@ -35,9 +35,11 @@ export interface Model {
   version: string | null
   default_ek: number | null
   default_vk: number | null
+  default_supplier_id: string | null
   created_at: string
   manufacturer?: Manufacturer
   category?: Category
+  default_supplier?: Supplier | null
 }
 
 export interface Supplier {

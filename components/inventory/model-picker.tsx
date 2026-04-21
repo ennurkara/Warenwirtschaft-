@@ -25,7 +25,7 @@ export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
   async function refresh() {
     const { data: m } = await supabase
       .from('models')
-      .select('*, manufacturer:manufacturers(*)')
+      .select('*, manufacturer:manufacturers(*), default_supplier:suppliers!default_supplier_id(*)')
       .eq('category_id', categoryId)
       .order('modellname')
     setModels((m ?? []) as Model[])
@@ -53,7 +53,7 @@ export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
     if (error) { toast.error('Modell konnte nicht angelegt werden', { description: error.message }); return }
     const { data: fresh } = await supabase
       .from('models')
-      .select('*, manufacturer:manufacturers(*)')
+      .select('*, manufacturer:manufacturers(*), default_supplier:suppliers!default_supplier_id(*)')
       .eq('id', data.id)
       .single()
     await refresh()

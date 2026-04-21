@@ -47,12 +47,15 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
     ek_preis: '',
   })
 
+  // Modell-Defaults als Basis für Warnungen / Auto-Fill
+  const modelHasEk = selectedModel?.default_ek != null
+  const modelHasSupplier = selectedModel?.default_supplier_id != null
+  const hasFullPurchase = !!(purchase.supplier_id && purchase.ek_preis)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!category_id) { toast.error('Kategorie wählen'); return }
     if (!core.model_id) { toast.error('Modell wählen'); return }
-    if (!purchase.supplier_id) { toast.error('Lieferant wählen'); return }
-    if (!purchase.ek_preis) { toast.error('Einkaufspreis ist Pflicht'); return }
 
     setIsLoading(true)
 
@@ -79,38 +82,40 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
       if (vErr) { toast.error('Vectron-Details fehlgeschlagen', { description: vErr.message }); setIsLoading(false); return }
     }
 
-    // 3. purchase: bestehenden Beleg suchen (gleicher Lieferant+Datum+Rechnungsnr) oder neu anlegen
-    let purchase_id: string | null = null
-    const rechnungsnr = purchase.rechnungsnr || ''
-    const { data: existing } = await supabase
-      .from('purchases')
-      .select('id')
-      .eq('supplier_id', purchase.supplier_id)
-      .eq('datum', purchase.datum)
-      .eq('rechnungsnr', rechnungsnr)
-      .maybeSingle()
+    // 3. Einkaufsbeleg nur anlegen wenn Lieferant UND EK gesetzt.
+    //    Fehlt eins → Gerät steht ohne Beleg im Lager, Dashboard flaggt es.
+    if (hasFullPurchase) {
+      let purchase_id: string | null = null
+      const rechnungsnr = purchase.rechnungsnr || ''
+      const { data: existing } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('supplier_id', purchase.supplier_id)
+        .eq('datum', purchase.datum)
+        .eq('rechnungsnr', rechnungsnr)
+        .maybeSingle()
 
-    if (existing?.id) {
-      purchase_id = existing.id
-    } else {
-      const { data: newP, error: pErr } = await supabase.from('purchases').insert({
-        supplier_id: purchase.supplier_id,
-        rechnungsnr: purchase.rechnungsnr || null,
-        datum: purchase.datum,
-      }).select('id').single()
-      if (pErr) { toast.error('Einkaufsbeleg fehlgeschlagen', { description: pErr.message }); setIsLoading(false); return }
-      purchase_id = newP.id
+      if (existing?.id) {
+        purchase_id = existing.id
+      } else {
+        const { data: newP, error: pErr } = await supabase.from('purchases').insert({
+          supplier_id: purchase.supplier_id,
+          rechnungsnr: purchase.rechnungsnr || null,
+          datum: purchase.datum,
+        }).select('id').single()
+        if (pErr) { toast.error('Einkaufsbeleg fehlgeschlagen', { description: pErr.message }); setIsLoading(false); return }
+        purchase_id = newP.id
+      }
+
+      const { error: piErr } = await supabase.from('purchase_items').insert({
+        purchase_id,
+        device_id: device.id,
+        ek_preis: Number(purchase.ek_preis),
+      })
+      if (piErr) { toast.error('Beleg-Position fehlgeschlagen', { description: piErr.message }); setIsLoading(false); return }
     }
 
-    // 4. purchase_item
-    const { error: piErr } = await supabase.from('purchase_items').insert({
-      purchase_id,
-      device_id: device.id,
-      ek_preis: Number(purchase.ek_preis),
-    })
-    if (piErr) { toast.error('Beleg-Position fehlgeschlagen', { description: piErr.message }); setIsLoading(false); return }
-
-    toast.success('Gerät hinzugefügt')
+    toast.success(hasFullPurchase ? 'Gerät hinzugefügt' : 'Gerät ohne Einkaufsbeleg angelegt — Admin ergänzt später')
     router.push(`/inventory?category=${category_id}`)
     router.refresh()
   }
@@ -119,7 +124,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       <div className="space-y-2">
         <Label>Kategorie *</Label>
-        <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })) }}>
+        <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })); setPurchase(p => ({ ...p, supplier_id: '', ek_preis: '' })) }}>
           <SelectTrigger><SelectValue placeholder="Kategorie wählen..." /></SelectTrigger>
           <SelectContent>
             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -135,8 +140,11 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
             onChange={(id, model) => {
               setCore(p => ({ ...p, model_id: id }))
               setSelectedModel(model)
-              if (model?.default_ek != null) setPurchase(p => ({ ...p, ek_preis: String(model.default_ek) }))
-              else if (!isAdmin) setPurchase(p => ({ ...p, ek_preis: '' }))
+              setPurchase(p => ({
+                ...p,
+                ek_preis: model?.default_ek != null ? String(model.default_ek) : (isAdmin ? p.ek_preis : ''),
+                supplier_id: model?.default_supplier_id ?? (isAdmin ? p.supplier_id : ''),
+              }))
             }}
           />
 
@@ -158,25 +166,29 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
           </div>
 
           <fieldset className="border rounded p-4 space-y-3">
-            <legend className="px-2 text-sm font-medium">Einkauf</legend>
+            <legend className="px-2 text-sm font-medium">Einkauf <span className="text-slate-500 font-normal">(optional)</span></legend>
+            {selectedModel && !modelHasSupplier && !modelHasEk && (
+              <p className="text-xs text-amber-600">
+                Kein Standard-Lieferant und kein Standardpreis am Modell hinterlegt. Beleg bleibt leer — Admin ergänzt später. Das Gerät erscheint im Dashboard unter „Unvollständige Geräte".
+              </p>
+            )}
             <EntityPicker table="suppliers" label="Lieferant" value={purchase.supplier_id} onChange={v => setPurchase(p => ({ ...p, supplier_id: v }))} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><Label>Rechnungsnr</Label><Input value={purchase.rechnungsnr} onChange={e => setPurchase(p => ({ ...p, rechnungsnr: e.target.value }))} /></div>
-              <div><Label>Datum *</Label><Input type="date" value={purchase.datum} onChange={e => setPurchase(p => ({ ...p, datum: e.target.value }))} required /></div>
+              <div><Label>Datum</Label><Input type="date" value={purchase.datum} onChange={e => setPurchase(p => ({ ...p, datum: e.target.value }))} /></div>
               <div>
-                <Label>Einkaufspreis (€) *</Label>
+                <Label>Einkaufspreis (€)</Label>
                 <Input
                   type="number"
                   step="0.01"
                   min="0"
                   value={purchase.ek_preis}
                   onChange={e => setPurchase(p => ({ ...p, ek_preis: e.target.value }))}
-                  required
                   readOnly={!isAdmin}
                   disabled={!isAdmin && !purchase.ek_preis}
                 />
                 {!isAdmin && !purchase.ek_preis && selectedModel && (
-                  <p className="text-xs text-amber-600 mt-1">Kein Standardpreis am Modell hinterlegt — Admin kontaktieren.</p>
+                  <p className="text-xs text-amber-600 mt-1">Kein Standardpreis — Admin ergänzt später.</p>
                 )}
               </div>
             </div>

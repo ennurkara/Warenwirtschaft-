@@ -33,6 +33,8 @@ export interface Model {
   modellname: string
   variante: string | null
   version: string | null
+  default_ek: number | null
+  default_vk: number | null
   created_at: string
   manufacturer?: Manufacturer
   category?: Category

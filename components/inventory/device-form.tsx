@@ -17,9 +17,10 @@ import type { Category, Model } from '@/lib/types'
 interface DeviceFormProps {
   categories: Category[]
   prefill?: { serial_number?: string }
+  isAdmin: boolean
 }
 
-export function DeviceForm({ categories, prefill }: DeviceFormProps) {
+export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
@@ -131,7 +132,12 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
           <ModelPicker
             categoryId={category_id}
             value={core.model_id}
-            onChange={(id, model) => { setCore(p => ({ ...p, model_id: id })); setSelectedModel(model) }}
+            onChange={(id, model) => {
+              setCore(p => ({ ...p, model_id: id }))
+              setSelectedModel(model)
+              if (model?.default_ek != null) setPurchase(p => ({ ...p, ek_preis: String(model.default_ek) }))
+              else if (!isAdmin) setPurchase(p => ({ ...p, ek_preis: '' }))
+            }}
           />
 
           <div className="space-y-2">
@@ -157,7 +163,22 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><Label>Rechnungsnr</Label><Input value={purchase.rechnungsnr} onChange={e => setPurchase(p => ({ ...p, rechnungsnr: e.target.value }))} /></div>
               <div><Label>Datum *</Label><Input type="date" value={purchase.datum} onChange={e => setPurchase(p => ({ ...p, datum: e.target.value }))} required /></div>
-              <div><Label>Einkaufspreis (€) *</Label><Input type="number" step="0.01" min="0" value={purchase.ek_preis} onChange={e => setPurchase(p => ({ ...p, ek_preis: e.target.value }))} required /></div>
+              <div>
+                <Label>Einkaufspreis (€) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={purchase.ek_preis}
+                  onChange={e => setPurchase(p => ({ ...p, ek_preis: e.target.value }))}
+                  required
+                  readOnly={!isAdmin}
+                  disabled={!isAdmin && !purchase.ek_preis}
+                />
+                {!isAdmin && !purchase.ek_preis && selectedModel && (
+                  <p className="text-xs text-amber-600 mt-1">Kein Standardpreis am Modell hinterlegt — Admin kontaktieren.</p>
+                )}
+              </div>
             </div>
           </fieldset>
 

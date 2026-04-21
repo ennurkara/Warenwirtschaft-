@@ -15,7 +15,15 @@ export function ModelsTable() {
   const [models, setModels] = useState<Model[]>([])
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [form, setForm] = useState({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '' })
+  const [form, setForm] = useState({
+    manufacturer_id: '',
+    category_id: '',
+    modellname: '',
+    variante: '',
+    version: '',
+    default_ek: '',
+    default_vk: '',
+  })
 
   async function refresh() {
     const { data: m } = await supabase.from('models').select('*, manufacturer:manufacturers(*), category:categories(*)').order('modellname')
@@ -35,10 +43,20 @@ export function ModelsTable() {
       modellname: form.modellname,
       variante: form.variante || null,
       version: form.version || null,
+      default_ek: form.default_ek ? Number(form.default_ek) : null,
+      default_vk: form.default_vk ? Number(form.default_vk) : null,
     })
     if (error) { toast.error('Fehler', { description: error.message }); return }
-    setForm({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '' })
+    setForm({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '', default_ek: '', default_vk: '' })
     await refresh()
+  }
+
+  async function updatePrice(id: string, field: 'default_ek' | 'default_vk', raw: string) {
+    const value = raw.trim() === '' ? null : Number(raw)
+    if (value !== null && Number.isNaN(value)) { toast.error('Ungültiger Preis'); return }
+    const { error } = await supabase.from('models').update({ [field]: value }).eq('id', id)
+    if (error) { toast.error('Speichern fehlgeschlagen', { description: error.message }); return }
+    setModels(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m))
   }
 
   async function remove(id: string) {
@@ -51,7 +69,7 @@ export function ModelsTable() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Modelle</h1>
-      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-50">
+      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-8 gap-3 bg-slate-50">
         <div><Label>Hersteller *</Label>
           <Select value={form.manufacturer_id} onValueChange={v => setForm(p => ({ ...p, manufacturer_id: v }))}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -67,6 +85,8 @@ export function ModelsTable() {
         <div><Label>Modellname *</Label><Input value={form.modellname} onChange={e => setForm(p => ({ ...p, modellname: e.target.value }))} /></div>
         <div><Label>Variante</Label><Input value={form.variante} onChange={e => setForm(p => ({ ...p, variante: e.target.value }))} /></div>
         <div><Label>Version</Label><Input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} /></div>
+        <div><Label>EK (€)</Label><Input type="number" step="0.01" min="0" value={form.default_ek} onChange={e => setForm(p => ({ ...p, default_ek: e.target.value }))} /></div>
+        <div><Label>VK (€)</Label><Input type="number" step="0.01" min="0" value={form.default_vk} onChange={e => setForm(p => ({ ...p, default_vk: e.target.value }))} /></div>
         <div className="flex items-end"><Button onClick={add}>Anlegen</Button></div>
       </div>
       <div className="rounded-md border bg-white">
@@ -74,6 +94,7 @@ export function ModelsTable() {
           <TableHeader><TableRow>
             <TableHead>Hersteller</TableHead><TableHead>Kategorie</TableHead>
             <TableHead>Modell</TableHead><TableHead>Variante</TableHead><TableHead>Version</TableHead>
+            <TableHead className="w-28">EK (€)</TableHead><TableHead className="w-28">VK (€)</TableHead>
             <TableHead className="w-20" />
           </TableRow></TableHeader>
           <TableBody>
@@ -84,6 +105,26 @@ export function ModelsTable() {
                 <TableCell>{m.modellname}</TableCell>
                 <TableCell>{m.variante ?? '—'}</TableCell>
                 <TableCell>{m.version ?? '—'}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={m.default_ek ?? ''}
+                    onBlur={e => { if (e.target.value !== (m.default_ek?.toString() ?? '')) updatePrice(m.id, 'default_ek', e.target.value) }}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={m.default_vk ?? ''}
+                    onBlur={e => { if (e.target.value !== (m.default_vk?.toString() ?? '')) updatePrice(m.id, 'default_vk', e.target.value) }}
+                    className="h-8"
+                  />
+                </TableCell>
                 <TableCell><Button variant="outline" size="sm" onClick={() => remove(m.id)}>Löschen</Button></TableCell>
               </TableRow>
             ))}

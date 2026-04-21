@@ -11,8 +11,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { ModelPicker } from '@/components/inventory/model-picker'
 import { EntityPicker } from '@/components/inventory/entity-picker'
-import { KassenFields, INITIAL_KASSEN, KassenFormState } from '@/components/inventory/kassen-fields'
-import type { Category } from '@/lib/types'
+import { VectronFields, INITIAL_VECTRON, VectronFormState } from '@/components/inventory/vectron-fields'
+import type { Category, Model } from '@/lib/types'
 
 interface DeviceFormProps {
   categories: Category[]
@@ -26,7 +26,10 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
 
   const [category_id, setCategoryId] = useState('')
   const category = categories.find(c => c.id === category_id)
-  const isKassen = category?.name === 'Registrierkasse'
+  const isKassenhardware = category?.name === 'Kassenhardware'
+
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const isVectron = selectedModel?.manufacturer?.name === 'Vectron'
 
   const [core, setCore] = useState({
     model_id: '',
@@ -34,7 +37,7 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
     location: '',
     notes: '',
   })
-  const [kassen, setKassen] = useState<KassenFormState>(INITIAL_KASSEN)
+  const [vectron, setVectron] = useState<VectronFormState>(INITIAL_VECTRON)
 
   const [purchase, setPurchase] = useState({
     supplier_id: '',
@@ -63,18 +66,16 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
 
     if (devErr) { toast.error('Gerät konnte nicht angelegt werden', { description: devErr.message }); setIsLoading(false); return }
 
-    // 2. kassen_details insert (falls Kassen)
-    if (isKassen) {
-      const { error: kErr } = await supabase.from('kassen_details').insert({
+    // 2. vectron_details insert (nur wenn Kassenhardware + Vectron)
+    if (isKassenhardware && isVectron) {
+      const { error: vErr } = await supabase.from('vectron_details').insert({
         device_id: device.id,
-        fiskal_2020: kassen.fiskal_2020,
-        zvt: kassen.zvt,
-        hw_serial: kassen.hw_serial || null,
-        sw_serial: kassen.sw_serial || null,
-        tse_serial: kassen.tse_serial || null,
-        tse_valid_until: kassen.tse_valid_until || null,
+        sw_serial: vectron.sw_serial || null,
+        fiskal_2020: vectron.fiskal_2020,
+        zvt: vectron.zvt,
+        license_type: vectron.license_type,
       })
-      if (kErr) { toast.error('Kassen-Details fehlgeschlagen', { description: kErr.message }); setIsLoading(false); return }
+      if (vErr) { toast.error('Vectron-Details fehlgeschlagen', { description: vErr.message }); setIsLoading(false); return }
     }
 
     // 3. purchase: bestehenden Beleg suchen (gleicher Lieferant+Datum+Rechnungsnr) oder neu anlegen
@@ -117,7 +118,7 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       <div className="space-y-2">
         <Label>Kategorie *</Label>
-        <Select value={category_id} onValueChange={setCategoryId}>
+        <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })) }}>
           <SelectTrigger><SelectValue placeholder="Kategorie wählen..." /></SelectTrigger>
           <SelectContent>
             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -127,16 +128,18 @@ export function DeviceForm({ categories, prefill }: DeviceFormProps) {
 
       {category_id && (
         <>
-          <ModelPicker categoryId={category_id} value={core.model_id} onChange={v => setCore(p => ({ ...p, model_id: v }))} />
+          <ModelPicker
+            categoryId={category_id}
+            value={core.model_id}
+            onChange={(id, model) => { setCore(p => ({ ...p, model_id: id })); setSelectedModel(model) }}
+          />
 
-          {!isKassen && (
-            <div className="space-y-2">
-              <Label>Seriennummer</Label>
-              <Input value={core.serial_number} onChange={e => setCore(p => ({ ...p, serial_number: e.target.value }))} className="font-mono" />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>{isKassenhardware ? 'Hardware-Seriennummer' : 'Seriennummer'}</Label>
+            <Input value={core.serial_number} onChange={e => setCore(p => ({ ...p, serial_number: e.target.value }))} className="font-mono" />
+          </div>
 
-          {isKassen && <KassenFields value={kassen} onChange={setKassen} />}
+          {isKassenhardware && isVectron && <VectronFields value={vectron} onChange={setVectron} />}
 
           <div className="space-y-2">
             <Label>Standort</Label>

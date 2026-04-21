@@ -12,7 +12,7 @@ import type { Manufacturer, Model } from '@/lib/types'
 interface ModelPickerProps {
   categoryId: string
   value: string
-  onChange: (modelId: string) => void
+  onChange: (modelId: string, model: Model | null) => void
 }
 
 export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
@@ -51,8 +51,13 @@ export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
       version: nm.version || null,
     }).select('id').single()
     if (error) { toast.error('Modell konnte nicht angelegt werden', { description: error.message }); return }
+    const { data: fresh } = await supabase
+      .from('models')
+      .select('*, manufacturer:manufacturers(*)')
+      .eq('id', data.id)
+      .single()
     await refresh()
-    onChange(data.id)
+    onChange(data.id, (fresh as Model) ?? null)
     setShowNew(false)
     setNm({ manufacturer_id: '', modellname: '', variante: '', version: '' })
   }
@@ -61,7 +66,10 @@ export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
     <div className="space-y-2">
       <Label>Modell *</Label>
       <div className="flex gap-2">
-        <Select value={value} onValueChange={onChange}>
+        <Select
+          value={value}
+          onValueChange={id => onChange(id, models.find(m => m.id === id) ?? null)}
+        >
           <SelectTrigger className="flex-1"><SelectValue placeholder="Modell wählen..." /></SelectTrigger>
           <SelectContent>
             {models.map(m => (
@@ -90,7 +98,7 @@ export function ModelPicker({ categoryId, value, onChange }: ModelPickerProps) {
             </Select>
           </div>
           <div><Label>Modellname *</Label><Input value={nm.modellname} onChange={e => setNm(p => ({ ...p, modellname: e.target.value }))} /></div>
-          <div><Label>Variante (Full/Light)</Label><Input value={nm.variante} onChange={e => setNm(p => ({ ...p, variante: e.target.value }))} /></div>
+          <div><Label>Variante</Label><Input value={nm.variante} onChange={e => setNm(p => ({ ...p, variante: e.target.value }))} /></div>
           <div><Label>Version</Label><Input value={nm.version} onChange={e => setNm(p => ({ ...p, version: e.target.value }))} /></div>
           <Button type="button" onClick={createModel}>Anlegen</Button>
         </div>

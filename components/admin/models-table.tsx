@@ -1,0 +1,95 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { toast } from 'sonner'
+import type { Manufacturer, Category, Model } from '@/lib/types'
+
+export function ModelsTable() {
+  const supabase = createClient()
+  const [models, setModels] = useState<Model[]>([])
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [form, setForm] = useState({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '' })
+
+  async function refresh() {
+    const { data: m } = await supabase.from('models').select('*, manufacturer:manufacturers(*), category:categories(*)').order('modellname')
+    setModels((m ?? []) as Model[])
+    const { data: mf } = await supabase.from('manufacturers').select('*').order('name')
+    setManufacturers(mf ?? [])
+    const { data: c } = await supabase.from('categories').select('*').order('name')
+    setCategories(c ?? [])
+  }
+  useEffect(() => { refresh() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
+
+  async function add() {
+    if (!form.manufacturer_id || !form.category_id || !form.modellname) { toast.error('Pflichtfelder fehlen'); return }
+    const { error } = await supabase.from('models').insert({
+      manufacturer_id: form.manufacturer_id,
+      category_id: form.category_id,
+      modellname: form.modellname,
+      variante: form.variante || null,
+      version: form.version || null,
+    })
+    if (error) { toast.error('Fehler', { description: error.message }); return }
+    setForm({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '' })
+    await refresh()
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Wirklich löschen?')) return
+    const { error } = await supabase.from('models').delete().eq('id', id)
+    if (error) { toast.error('Löschen fehlgeschlagen', { description: error.message }); return }
+    await refresh()
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Modelle</h1>
+      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-50">
+        <div><Label>Hersteller *</Label>
+          <Select value={form.manufacturer_id} onValueChange={v => setForm(p => ({ ...p, manufacturer_id: v }))}>
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>{manufacturers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div><Label>Kategorie *</Label>
+          <Select value={form.category_id} onValueChange={v => setForm(p => ({ ...p, category_id: v }))}>
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div><Label>Modellname *</Label><Input value={form.modellname} onChange={e => setForm(p => ({ ...p, modellname: e.target.value }))} /></div>
+        <div><Label>Variante</Label><Input value={form.variante} onChange={e => setForm(p => ({ ...p, variante: e.target.value }))} /></div>
+        <div><Label>Version</Label><Input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} /></div>
+        <div className="flex items-end"><Button onClick={add}>Anlegen</Button></div>
+      </div>
+      <div className="rounded-md border bg-white">
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Hersteller</TableHead><TableHead>Kategorie</TableHead>
+            <TableHead>Modell</TableHead><TableHead>Variante</TableHead><TableHead>Version</TableHead>
+            <TableHead className="w-20" />
+          </TableRow></TableHeader>
+          <TableBody>
+            {models.map(m => (
+              <TableRow key={m.id}>
+                <TableCell>{m.manufacturer?.name ?? '—'}</TableCell>
+                <TableCell>{m.category?.name ?? '—'}</TableCell>
+                <TableCell>{m.modellname}</TableCell>
+                <TableCell>{m.variante ?? '—'}</TableCell>
+                <TableCell>{m.version ?? '—'}</TableCell>
+                <TableCell><Button variant="outline" size="sm" onClick={() => remove(m.id)}>Löschen</Button></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}

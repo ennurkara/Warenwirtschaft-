@@ -20,32 +20,21 @@ export async function POST(req: NextRequest) {
   // Fetch inventory context from Supabase (service role bypasses RLS)
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  const [{ data: devices }, { data: movements }] = await Promise.all([
-    supabase
-      .from('devices')
-      .select('name, quantity, status, condition, location, serial_number, categories(name)')
-      .neq('status', 'ausgemustert')
-      .order('name'),
-    supabase
-      .from('device_movements')
-      .select('action, quantity, created_at, devices(name), profiles(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
+  const { data: devices } = await supabase
+    .from('devices')
+    .select('id, serial_number, status, location, model:models(modellname, manufacturer:manufacturers(name), category:categories(name))')
+    .neq('status', 'ausgemustert')
+    .order('serial_number')
+
+  type ModelShape = { modellname: string; manufacturer: { name: string } | null; category: { name: string } | null } | null
 
   const inventoryText = (devices ?? [])
     .map((d: Record<string, unknown>) => {
-      const cat = (d.categories as Record<string, string>)?.name ?? 'Unbekannt'
-      return `- ${d.name} (${cat}): ${d.quantity}x, Status: ${d.status}, Zustand: ${d.condition}, Ort: ${d.location ?? 'n/a'}, SN: ${d.serial_number ?? 'n/a'}`
-    })
-    .join('\n')
-
-  const movementsText = (movements ?? [])
-    .map((m: Record<string, unknown>) => {
-      const device = (m.devices as Record<string, string>)?.name ?? 'Unbekannt'
-      const user = (m.profiles as Record<string, string>)?.full_name ?? 'Unbekannt'
-      const action = m.action === 'entnahme' ? 'Entnahme' : m.action === 'einlagerung' ? 'Einlagerung' : 'Defekt'
-      return `- ${action}: ${m.quantity}x ${device} von ${user} (${new Date(m.created_at as string).toLocaleDateString('de-DE')})`
+      const model = d.model as ModelShape
+      const modelName = model?.modellname ?? 'Unbekannt'
+      const manufacturer = model?.manufacturer?.name ?? 'Unbekannt'
+      const category = model?.category?.name ?? 'Unbekannt'
+      return `- SN: ${d.serial_number ?? 'n/a'} | ${manufacturer} ${modelName} (${category}) | Status: ${d.status} | Ort: ${d.location ?? 'n/a'}`
     })
     .join('\n')
 
@@ -59,10 +48,7 @@ export async function POST(req: NextRequest) {
         content: `Du bist ein freundlicher Lager-Assistent für ein Warenwirtschaftssystem. Beantworte Fragen zum Inventar auf Deutsch. Antworte immer als JSON: { "reply": "deine antwort" }
 
 Aktueller Inventarstand:
-${inventoryText}
-
-Letzte Bewegungen:
-${movementsText}`,
+${inventoryText}`,
       },
       {
         role: 'user',

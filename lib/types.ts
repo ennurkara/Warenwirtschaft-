@@ -1,7 +1,6 @@
+// lib/types.ts
 export type UserRole = 'admin' | 'mitarbeiter' | 'viewer'
-export type DeviceCondition = 'neu' | 'gebraucht'
-export type DeviceStatus = 'lager' | 'im_einsatz' | 'defekt' | 'ausgemustert'
-export type MovementAction = 'entnahme' | 'einlagerung' | 'defekt_gemeldet'
+export type DeviceStatus = 'lager' | 'reserviert' | 'verkauft' | 'defekt' | 'ausgemustert'
 
 export interface Profile {
   id: string
@@ -21,32 +20,110 @@ export interface CategoryWithCount extends Category {
   device_count: number
 }
 
-export interface Device {
+export interface Manufacturer {
   id: string
   name: string
+  created_at: string
+}
+
+export interface Model {
+  id: string
+  manufacturer_id: string
   category_id: string
+  modellname: string
+  variante: string | null
+  version: string | null
+  created_at: string
+  manufacturer?: Manufacturer
+  category?: Category
+}
+
+export interface Supplier {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface Customer {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface KassenDetails {
+  device_id: string
+  fiskal_2020: boolean
+  zvt: boolean
+  hw_serial: string | null
+  sw_serial: string | null
+  tse_serial: string | null
+  tse_valid_until: string | null
+}
+
+export interface Device {
+  id: string
+  model_id: string
   serial_number: string | null
-  condition: DeviceCondition
   status: DeviceStatus
-  quantity: number
   location: string | null
   photo_url: string | null
   notes: string | null
   created_at: string
   updated_at: string
-  category?: Category
+  model?: Model
+  kassen_details?: KassenDetails | null
+  purchase_item?: PurchaseItem | null
+  sale_item?: SaleItem | null
 }
 
-export interface DeviceMovement {
+export interface Purchase {
   id: string
-  device_id: string
-  user_id: string
-  action: MovementAction
-  quantity: number
-  note: string | null
+  supplier_id: string
+  rechnungsnr: string | null
+  datum: string
+  notes: string | null
+  created_by: string | null
   created_at: string
+  supplier?: Supplier
+  items?: PurchaseItem[]
+}
+
+export interface PurchaseItem {
+  id: string
+  purchase_id: string
+  device_id: string
+  ek_preis: number
+  purchase?: Purchase
   device?: Device
-  profile?: Profile
+}
+
+export interface Sale {
+  id: string
+  customer_id: string
+  rechnungsnr: string | null
+  datum: string
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  customer?: Customer
+  items?: SaleItem[]
+}
+
+export interface SaleItem {
+  id: string
+  sale_id: string
+  device_id: string
+  vk_preis: number
+  sale?: Sale
+  device?: Device
 }
 
 export interface OcrResult {

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DeviceCard } from '@/components/inventory/device-card'
-import { getStatusLabel, formatDate, formatCurrency } from '@/lib/utils'
+import { getStatusLabel, formatCurrency } from '@/lib/utils'
 import { getColumnsForCategory, COLUMN_KEY, ColumnKey } from '@/lib/category-columns'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
 import type { Device, Category, DeviceStatus } from '@/lib/types'
@@ -45,8 +45,8 @@ export function DeviceList({
     const s = search.toLowerCase()
     const name = (d.model?.modellname ?? '').toLowerCase()
     const ms = (d.serial_number ?? '').toLowerCase()
-    const hw = (d.kassen_details?.hw_serial ?? '').toLowerCase()
-    const matchesSearch = !s || name.includes(s) || ms.includes(s) || hw.includes(s)
+    const sw = (d.vectron_details?.sw_serial ?? '').toLowerCase()
+    const matchesSearch = !s || name.includes(s) || ms.includes(s) || sw.includes(s)
     const display = deriveDisplayStatus(d)
     const matchesStatus = statusFilter === 'all' || display === statusFilter
     return matchesSearch && matchesStatus
@@ -57,12 +57,14 @@ export function DeviceList({
       case COLUMN_KEY.MODEL:        return <Link href={`/inventory/${d.id}`} className="font-medium hover:underline">{d.model?.modellname ?? '—'}</Link>
       case COLUMN_KEY.MANUFACTURER: return d.model?.manufacturer?.name ?? '—'
       case COLUMN_KEY.SERIAL:       return <span className="font-mono text-sm">{d.serial_number ?? '—'}</span>
-      case COLUMN_KEY.HW_SERIAL:    return <span className="font-mono text-sm">{d.kassen_details?.hw_serial ?? '—'}</span>
-      case COLUMN_KEY.SW_SERIAL:    return <span className="font-mono text-sm">{d.kassen_details?.sw_serial ?? '—'}</span>
-      case COLUMN_KEY.TSE_SERIAL:   return <span className="font-mono text-sm">{d.kassen_details?.tse_serial ?? '—'}</span>
-      case COLUMN_KEY.TSE_VALID:    return d.kassen_details?.tse_valid_until ? formatDate(d.kassen_details.tse_valid_until) : '—'
-      case COLUMN_KEY.FISKAL_2020:  return d.kassen_details?.fiskal_2020 ? 'Ja' : 'Nein'
-      case COLUMN_KEY.ZVT:          return d.kassen_details?.zvt ? 'Ja' : 'Nein'
+      case COLUMN_KEY.SW_SERIAL:    return <span className="font-mono text-sm">{d.vectron_details?.sw_serial ?? '—'}</span>
+      case COLUMN_KEY.FISKAL_2020:  return d.vectron_details ? (d.vectron_details.fiskal_2020 ? 'Ja' : 'Nein') : '—'
+      case COLUMN_KEY.ZVT:          return d.vectron_details ? (d.vectron_details.zvt ? 'Ja' : 'Nein') : '—'
+      case COLUMN_KEY.LICENSE_TYPE: {
+        const lt = d.vectron_details?.license_type
+        if (!lt) return '—'
+        return lt === 'full' ? 'Full' : 'Light'
+      }
       case COLUMN_KEY.EK:           return d.purchase_item ? formatCurrency(Number(d.purchase_item.ek_preis)) : '—'
       case COLUMN_KEY.VK:           return d.sale_item ? formatCurrency(Number(d.sale_item.vk_preis)) : '—'
       case COLUMN_KEY.STATUS:       { const st = deriveDisplayStatus(d); return <Badge className={STATUS_COLORS[st]}>{getStatusLabel(st)}</Badge> }
@@ -82,7 +84,7 @@ export function DeviceList({
       )}
 
       <div className="flex flex-col gap-2 md:flex-row md:gap-3">
-        <Input placeholder="Suchen (Name, Seriennr, HW-SN)..." value={search} onChange={e => setSearch(e.target.value)} className="w-full md:max-w-sm" />
+        <Input placeholder="Suchen (Name, Seriennr, SW-SN)..." value={search} onChange={e => setSearch(e.target.value)} className="w-full md:max-w-sm" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-48"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>

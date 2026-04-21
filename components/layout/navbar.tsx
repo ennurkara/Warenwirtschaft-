@@ -5,19 +5,17 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Package, MessageCircle, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Package, ShieldCheck } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/inventory', label: 'Inventar' },
-  { href: '/chat', label: 'Chatbot' },
 ]
 
 const tabLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/inventory', label: 'Inventar', icon: Package },
-  { href: '/chat', label: 'Chat', icon: MessageCircle },
 ]
 
 export function Navbar({ profile }: { profile: Profile }) {
@@ -57,8 +55,6 @@ export function Navbar({ profile }: { profile: Profile }) {
                 <>
                   {[
                     { href: '/admin/users', label: 'Benutzer' },
-                    { href: '/admin/manufacturers', label: 'Hersteller' },
-                    { href: '/admin/models', label: 'Modelle' },
                     { href: '/admin/suppliers', label: 'Lieferanten' },
                     { href: '/admin/customers', label: 'Kunden' },
                     { href: '/admin/purchases', label: 'Einkäufe' },
@@ -96,7 +92,7 @@ export function Navbar({ profile }: { profile: Profile }) {
 
       {/* Bottom tab bar — visible only on mobile */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t md:hidden">
-        <div className={cn('grid h-16', profile.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3')}>
+        <div className={cn('grid h-16', profile.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2')}>
           {tabLinks.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}

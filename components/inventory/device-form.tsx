@@ -48,8 +48,9 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
   })
 
   // Modell-Defaults als Basis für Warnungen / Auto-Fill
+  // Lieferant: Modell → Hersteller als Fallback
   const modelHasEk = selectedModel?.default_ek != null
-  const modelHasSupplier = selectedModel?.default_supplier_id != null
+  const modelHasSupplier = !!(selectedModel?.default_supplier_id || selectedModel?.manufacturer?.default_supplier_id)
   const hasFullPurchase = !!(purchase.supplier_id && purchase.ek_preis)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -143,7 +144,9 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
               setPurchase(p => ({
                 ...p,
                 ek_preis: model?.default_ek != null ? String(model.default_ek) : (isAdmin ? p.ek_preis : ''),
-                supplier_id: model?.default_supplier_id ?? (isAdmin ? p.supplier_id : ''),
+                supplier_id: model?.default_supplier_id
+                  ?? model?.manufacturer?.default_supplier_id
+                  ?? (isAdmin ? p.supplier_id : ''),
               }))
             }}
           />

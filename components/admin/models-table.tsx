@@ -22,8 +22,6 @@ export function ModelsTable() {
     manufacturer_id: '',
     category_id: '',
     modellname: '',
-    variante: '',
-    version: '',
     default_ek: '',
     default_vk: '',
   })
@@ -49,13 +47,11 @@ export function ModelsTable() {
       manufacturer_id: form.manufacturer_id,
       category_id: form.category_id,
       modellname: form.modellname,
-      variante: form.variante || null,
-      version: form.version || null,
       default_ek: form.default_ek ? Number(form.default_ek) : null,
       default_vk: form.default_vk ? Number(form.default_vk) : null,
     })
     if (error) { toast.error('Fehler', { description: error.message }); return }
-    setForm({ manufacturer_id: '', category_id: '', modellname: '', variante: '', version: '', default_ek: '', default_vk: '' })
+    setForm({ manufacturer_id: '', category_id: '', modellname: '', default_ek: '', default_vk: '' })
     await refresh()
   }
 
@@ -85,7 +81,7 @@ export function ModelsTable() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Modelle</h1>
-      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-8 gap-3 bg-slate-50">
+      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-50">
         <div><Label>Hersteller *</Label>
           <Select value={form.manufacturer_id} onValueChange={v => setForm(p => ({ ...p, manufacturer_id: v }))}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -99,8 +95,6 @@ export function ModelsTable() {
           </Select>
         </div>
         <div><Label>Modellname *</Label><Input value={form.modellname} onChange={e => setForm(p => ({ ...p, modellname: e.target.value }))} /></div>
-        <div><Label>Variante</Label><Input value={form.variante} onChange={e => setForm(p => ({ ...p, variante: e.target.value }))} /></div>
-        <div><Label>Version</Label><Input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} /></div>
         <div><Label>EK (€)</Label><Input type="number" step="0.01" min="0" value={form.default_ek} onChange={e => setForm(p => ({ ...p, default_ek: e.target.value }))} /></div>
         <div><Label>VK (€)</Label><Input type="number" step="0.01" min="0" value={form.default_vk} onChange={e => setForm(p => ({ ...p, default_vk: e.target.value }))} /></div>
         <div className="flex items-end"><Button onClick={add}>Anlegen</Button></div>
@@ -109,7 +103,7 @@ export function ModelsTable() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Hersteller</TableHead><TableHead>Kategorie</TableHead>
-            <TableHead>Modell</TableHead><TableHead>Variante</TableHead><TableHead>Version</TableHead>
+            <TableHead>Modell</TableHead>
             <TableHead className="w-28">EK (€)</TableHead><TableHead className="w-28">VK (€)</TableHead>
             <TableHead className="w-48">Lieferant</TableHead>
             <TableHead className="w-20" />
@@ -120,8 +114,6 @@ export function ModelsTable() {
                 <TableCell>{m.manufacturer?.name ?? '—'}</TableCell>
                 <TableCell>{m.category?.name ?? '—'}</TableCell>
                 <TableCell>{m.modellname}</TableCell>
-                <TableCell>{m.variante ?? '—'}</TableCell>
-                <TableCell>{m.version ?? '—'}</TableCell>
                 <TableCell>
                   <Input
                     type="number"

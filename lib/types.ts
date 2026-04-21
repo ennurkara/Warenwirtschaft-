@@ -23,7 +23,9 @@ export interface CategoryWithCount extends Category {
 export interface Manufacturer {
   id: string
   name: string
+  default_supplier_id: string | null
   created_at: string
+  default_supplier?: Supplier | null
 }
 
 export interface Model {

@@ -1,12 +1,11 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchDevice } from '@/lib/inventory/queries'
-import { DeviceForm } from '@/components/inventory/device-form'
 import { SellDialog } from '@/components/inventory/sell-dialog'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency, getStatusLabel } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
-import type { Category, Profile, DeviceStatus } from '@/lib/types'
+import type { DeviceStatus } from '@/lib/types'
 
 const STATUS_COLORS: Record<DeviceStatus, string> = {
   lager:        'bg-green-100 text-green-800',
@@ -18,25 +17,19 @@ const STATUS_COLORS: Record<DeviceStatus, string> = {
 
 export default async function DeviceDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
 
-  const [device, { data: categories }] = await Promise.all([
-    fetchDevice(supabase, params.id),
-    supabase.from('categories').select('*').order('name'),
-  ])
-
+  const device = await fetchDevice(supabase, params.id)
   if (!device) notFound()
 
-  const isAdmin = (profile as Profile)?.role === 'admin'
   const displayStatus = deriveDisplayStatus(device)
 
   const modelName = device.model?.modellname ?? '—'
   const categoryName = device.model?.category?.name ?? '—'
   const manufacturerName = device.model?.manufacturer?.name ?? '—'
-  const serialDisplay = device.kassen_details?.hw_serial ?? device.serial_number ?? '—'
+  const serialDisplay = device.serial_number ?? '—'
   const ek = device.purchase_item ? formatCurrency(Number(device.purchase_item.ek_preis)) : null
   const vk = device.sale_item ? formatCurrency(Number(device.sale_item.vk_preis)) : null
+  const v = device.vectron_details
 
   return (
     <div className="space-y-8">
@@ -64,25 +57,31 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 rounded-md border bg-white p-4 text-sm">
         <div>
-          <p className="text-xs text-slate-500 mb-0.5">Seriennummer</p>
+          <p className="text-xs text-slate-500 mb-0.5">Hardware-SN</p>
           <p className="font-mono">{serialDisplay}</p>
         </div>
-        {device.kassen_details?.sw_serial && (
+        {v?.sw_serial && (
           <div>
-            <p className="text-xs text-slate-500 mb-0.5">SW-SN</p>
-            <p className="font-mono">{device.kassen_details.sw_serial}</p>
+            <p className="text-xs text-slate-500 mb-0.5">Software-SN</p>
+            <p className="font-mono">{v.sw_serial}</p>
           </div>
         )}
-        {device.kassen_details?.tse_serial && (
+        {v && (
           <div>
-            <p className="text-xs text-slate-500 mb-0.5">TSE-SN</p>
-            <p className="font-mono">{device.kassen_details.tse_serial}</p>
+            <p className="text-xs text-slate-500 mb-0.5">Lizenz</p>
+            <p>{v.license_type === 'full' ? 'Full' : 'Light'}</p>
           </div>
         )}
-        {device.kassen_details?.tse_valid_until && (
+        {v && (
           <div>
-            <p className="text-xs text-slate-500 mb-0.5">TSE gültig bis</p>
-            <p>{formatDate(device.kassen_details.tse_valid_until)}</p>
+            <p className="text-xs text-slate-500 mb-0.5">Fiskal 2020</p>
+            <p>{v.fiskal_2020 ? 'Ja' : 'Nein'}</p>
+          </div>
+        )}
+        {v && (
+          <div>
+            <p className="text-xs text-slate-500 mb-0.5">ZVT</p>
+            <p>{v.zvt ? 'Ja' : 'Nein'}</p>
           </div>
         )}
         {ek && (
@@ -113,17 +112,6 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
         <div className="rounded-md border bg-white p-4 text-sm">
           <p className="text-xs text-slate-500 mb-1">Notizen</p>
           <p className="whitespace-pre-wrap">{device.notes}</p>
-        </div>
-      )}
-
-      {isAdmin && (
-        <div>
-          <h2 className="text-lg font-medium mb-4">Gerät bearbeiten</h2>
-          <DeviceForm
-            categories={(categories ?? []) as Category[]}
-            device={device}
-            isAdmin={isAdmin}
-          />
         </div>
       )}
     </div>

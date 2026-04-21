@@ -33,7 +33,7 @@ export function DeviceCard({ device }: DeviceCardProps) {
         <div className="flex-1 min-w-0">
           <p className="font-medium truncate text-sm">{device.model?.modellname ?? '—'}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {device.model?.category?.name ?? '—'} · {device.serial_number ?? device.kassen_details?.hw_serial ?? '—'}
+            {device.model?.category?.name ?? '—'} · {device.serial_number ?? '—'}
           </p>
           {(ek || vk) && (
             <p className="text-xs text-slate-400 truncate">

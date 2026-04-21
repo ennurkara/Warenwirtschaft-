@@ -7,6 +7,9 @@ import { IncompleteDevices } from '@/components/dashboard/incomplete-devices'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
+  const isAdmin = profile?.role === 'admin'
 
   const [kpi, stock, recent, top, incomplete] = await Promise.all([
     supabase.from('v_dashboard_kpis').select('*').single(),
@@ -22,7 +25,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <KpiCards data={kpiData} />
-      <IncompleteDevices rows={incomplete.data ?? []} />
+      <IncompleteDevices rows={incomplete.data ?? []} isAdmin={isAdmin} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StockByCategory rows={stock.data ?? []} />
         <TopModels rows={top.data ?? []} />

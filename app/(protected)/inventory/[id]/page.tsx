@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchDevice } from '@/lib/inventory/queries'
 import { SellDialog } from '@/components/inventory/sell-dialog'
+import { AddPurchaseForm } from '@/components/inventory/add-purchase-form'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency, getStatusLabel } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
@@ -20,6 +21,11 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
 
   const device = await fetchDevice(supabase, params.id)
   if (!device) notFound()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
+  const isAdmin = profile?.role === 'admin'
+  const isIncomplete = !device.purchase_item
 
   const displayStatus = deriveDisplayStatus(device)
 
@@ -41,7 +47,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {!device.sale_item && (device.status === 'lager' || device.status === 'reserviert') && (
+          {!device.sale_item && !isIncomplete && (device.status === 'lager' || device.status === 'reserviert') && (
             <SellDialog deviceId={device.id} />
           )}
           <Badge className={STATUS_COLORS[displayStatus]}>
@@ -112,6 +118,13 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
         <div className="rounded-md border bg-white p-4 text-sm">
           <p className="text-xs text-slate-500 mb-1">Notizen</p>
           <p className="whitespace-pre-wrap">{device.notes}</p>
+        </div>
+      )}
+
+      {isIncomplete && isAdmin && <AddPurchaseForm deviceId={device.id} />}
+      {isIncomplete && !isAdmin && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          Unvollständiges Gerät — Einkaufsdaten fehlen. Admin muss noch Lieferant und EK nachpflegen, bevor das Gerät verkauft werden kann.
         </div>
       )}
     </div>

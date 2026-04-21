@@ -1,29 +1,26 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { DeviceStatus, DeviceCondition } from './types'
+import type { DeviceStatus } from '@/lib/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+export function formatDate(s: string): string {
+  return new Date(s).toLocaleDateString('de-DE')
 }
 
-export function getStatusLabel(status: DeviceStatus): string {
-  const labels: Record<DeviceStatus, string> = {
+export function getStatusLabel(s: DeviceStatus): string {
+  const map: Record<DeviceStatus, string> = {
     lager: 'Im Lager',
-    im_einsatz: 'Im Einsatz',
+    reserviert: 'Reserviert',
+    verkauft: 'Verkauft',
     defekt: 'Defekt',
     ausgemustert: 'Ausgemustert',
   }
-  return labels[status]
+  return map[s]
 }
 
-export function getConditionLabel(condition: DeviceCondition): string {
-  return condition === 'neu' ? 'Neu' : 'Gebraucht'
+export function formatCurrency(n: number): string {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n)
 }

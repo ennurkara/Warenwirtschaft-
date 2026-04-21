@@ -8,7 +8,7 @@ const DEVICE_SELECT = `
     manufacturer:manufacturers(*),
     category:categories(*)
   ),
-  kassen_details(*),
+  vectron_details(*),
   purchase_item:purchase_items(*, purchase:purchases(*, supplier:suppliers(*))),
   sale_item:sale_items(*, sale:sales(*, customer:customers(*)))
 `

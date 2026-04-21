@@ -58,14 +58,14 @@ export interface Customer {
   created_at: string
 }
 
-export interface KassenDetails {
+export type VectronLicenseType = 'full' | 'light'
+
+export interface VectronDetails {
   device_id: string
+  sw_serial: string | null
   fiskal_2020: boolean
   zvt: boolean
-  hw_serial: string | null
-  sw_serial: string | null
-  tse_serial: string | null
-  tse_valid_until: string | null
+  license_type: VectronLicenseType
 }
 
 export interface Device {
@@ -79,7 +79,7 @@ export interface Device {
   created_at: string
   updated_at: string
   model?: Model
-  kassen_details?: KassenDetails | null
+  vectron_details?: VectronDetails | null
   purchase_item?: PurchaseItem | null
   sale_item?: SaleItem | null
 }

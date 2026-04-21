@@ -55,6 +55,7 @@ export function Navbar({ profile }: { profile: Profile }) {
                 <>
                   {[
                     { href: '/admin/users', label: 'Benutzer' },
+                    { href: '/admin/models', label: 'Modelle' },
                     { href: '/admin/suppliers', label: 'Lieferanten' },
                     { href: '/admin/customers', label: 'Kunden' },
                     { href: '/admin/purchases', label: 'Einkäufe' },

@@ -11,6 +11,7 @@ interface CategoryDeviceListProps {
   canAdd: boolean
   categoryName: string
   hideCategoryFilter: boolean
+  emptyMessage?: string
 }
 
 export function CategoryDeviceList({
@@ -19,6 +20,7 @@ export function CategoryDeviceList({
   canAdd,
   categoryName,
   hideCategoryFilter,
+  emptyMessage,
 }: CategoryDeviceListProps) {
   return (
     <div className="space-y-4">
@@ -43,6 +45,7 @@ export function CategoryDeviceList({
         canAdd={canAdd}
         hideCategoryFilter={hideCategoryFilter}
         hideHeading
+        emptyMessage={emptyMessage}
       />
     </div>
   )

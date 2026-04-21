@@ -5,11 +5,11 @@ import { CategoryDeviceList } from '@/components/inventory/category-device-list'
 import type { Device, Category, CategoryWithCount, Profile } from '@/lib/types'
 
 interface PageProps {
-  searchParams: { category?: string }
+  searchParams: Promise<{ category?: string }>
 }
 
 export default async function InventoryPage({ searchParams }: PageProps) {
-  const categoryId = searchParams.category
+  const { category: categoryId } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -60,18 +60,15 @@ export default async function InventoryPage({ searchParams }: PageProps) {
     )
   }
 
-  const { data: category } = await supabase.from('categories').select('*').eq('id', categoryId).single()
+  const [{ data: category }, { data: devices }, { data: categories }] = await Promise.all([
+    supabase.from('categories').select('*').eq('id', categoryId).single(),
+    supabase.from('devices').select('*, category:categories(*)').eq('category_id', categoryId).order('created_at', { ascending: false }),
+    supabase.from('categories').select('*').order('name'),
+  ])
+
   if (!category) {
     redirect('/inventory')
   }
-
-  const { data: devices } = await supabase
-    .from('devices')
-    .select('*, category:categories(*)')
-    .eq('category_id', categoryId)
-    .order('created_at', { ascending: false })
-
-  const { data: categories } = await supabase.from('categories').select('*').order('name')
 
   return (
     <CategoryDeviceList
@@ -80,6 +77,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
       canAdd={canAdd}
       categoryName={category.name}
       hideCategoryFilter
+      emptyMessage="Keine Geräte in dieser Kategorie."
     />
   )
 }

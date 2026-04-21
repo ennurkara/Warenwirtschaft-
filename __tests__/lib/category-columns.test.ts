@@ -1,16 +1,25 @@
 import { getColumnsForCategory, COLUMN_KEY } from '@/lib/category-columns'
 
 describe('getColumnsForCategory', () => {
-  it('returns Kassen columns for Registrierkasse', () => {
-    const cols = getColumnsForCategory('Registrierkasse')
+  it('returns Kassenhardware columns with Vectron-specific keys', () => {
+    const cols = getColumnsForCategory('Kassenhardware')
     const keys = cols.map(c => c.key)
-    expect(keys).toContain(COLUMN_KEY.HW_SERIAL)
+    expect(keys).toContain(COLUMN_KEY.SERIAL)        // HW-SN (devices.serial_number)
     expect(keys).toContain(COLUMN_KEY.SW_SERIAL)
-    expect(keys).toContain(COLUMN_KEY.TSE_VALID)
+    expect(keys).toContain(COLUMN_KEY.LICENSE_TYPE)
     expect(keys).toContain(COLUMN_KEY.FISKAL_2020)
     expect(keys).toContain(COLUMN_KEY.ZVT)
     expect(keys).toContain(COLUMN_KEY.EK)
     expect(keys).toContain(COLUMN_KEY.VK)
+  })
+
+  it('no longer returns Vectron-specific columns for old Registrierkasse name', () => {
+    const cols = getColumnsForCategory('Registrierkasse')
+    const keys = cols.map(c => c.key)
+    expect(keys).not.toContain(COLUMN_KEY.SW_SERIAL)
+    expect(keys).not.toContain(COLUMN_KEY.LICENSE_TYPE)
+    // Old name falls back to generic columns now
+    expect(keys).toContain(COLUMN_KEY.SERIAL)
   })
 
   it('returns generic columns for Drucker', () => {
@@ -18,7 +27,7 @@ describe('getColumnsForCategory', () => {
     const keys = cols.map(c => c.key)
     expect(keys).toContain(COLUMN_KEY.SERIAL)
     expect(keys).toContain(COLUMN_KEY.EK)
-    expect(keys).not.toContain(COLUMN_KEY.HW_SERIAL)
+    expect(keys).not.toContain(COLUMN_KEY.SW_SERIAL)
     expect(keys).not.toContain(COLUMN_KEY.FISKAL_2020)
   })
 

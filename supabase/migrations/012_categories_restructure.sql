@@ -121,3 +121,30 @@ CREATE POLICY "stock_movements_insert_admin_staff"
 
 -- Movements are append-only: no UPDATE/DELETE policies, so non-superuser
 -- writes are silently denied. Corrections happen via a new 'korrektur' row.
+
+-- 6. v_inventory_overview: unified count per category for dashboard
+--    For device categories: 1 row in devices = 1 unit.
+--    For stock categories: sum(quantity) across stock_items in that category.
+
+CREATE OR REPLACE VIEW v_inventory_overview AS
+SELECT
+  c.id           AS category_id,
+  c.name         AS category_name,
+  c.kind         AS category_kind,
+  c.cluster      AS category_cluster,
+  CASE
+    WHEN c.kind = 'stock'
+      THEN COALESCE((
+        SELECT SUM(si.quantity)
+        FROM stock_items si
+        JOIN models m ON m.id = si.model_id
+        WHERE m.category_id = c.id
+      ), 0)
+    ELSE COALESCE((
+      SELECT COUNT(*)
+      FROM devices d
+      JOIN models m ON m.id = d.model_id
+      WHERE m.category_id = c.id
+    ), 0)
+  END            AS unit_count
+FROM categories c;

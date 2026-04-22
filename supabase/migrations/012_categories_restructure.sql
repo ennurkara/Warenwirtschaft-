@@ -68,3 +68,56 @@ CREATE TABLE IF NOT EXISTS stock_movements (
 
 CREATE INDEX IF NOT EXISTS stock_movements_item_idx ON stock_movements(stock_item_id);
 CREATE INDEX IF NOT EXISTS stock_movements_created_idx ON stock_movements(created_at DESC);
+
+-- 4. RLS for stock_items
+
+ALTER TABLE stock_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "stock_items_select_all" ON stock_items;
+CREATE POLICY "stock_items_select_all"
+  ON stock_items FOR SELECT
+  TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "stock_items_insert_admin_staff" ON stock_items;
+CREATE POLICY "stock_items_insert_admin_staff"
+  ON stock_items FOR INSERT
+  TO authenticated WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role IN ('admin','mitarbeiter'))
+  );
+
+DROP POLICY IF EXISTS "stock_items_update_admin_staff" ON stock_items;
+CREATE POLICY "stock_items_update_admin_staff"
+  ON stock_items FOR UPDATE
+  TO authenticated USING (
+    EXISTS (SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role IN ('admin','mitarbeiter'))
+  );
+
+DROP POLICY IF EXISTS "stock_items_delete_admin" ON stock_items;
+CREATE POLICY "stock_items_delete_admin"
+  ON stock_items FOR DELETE
+  TO authenticated USING (
+    EXISTS (SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- 5. RLS for stock_movements
+
+ALTER TABLE stock_movements ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "stock_movements_select_all" ON stock_movements;
+CREATE POLICY "stock_movements_select_all"
+  ON stock_movements FOR SELECT
+  TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "stock_movements_insert_admin_staff" ON stock_movements;
+CREATE POLICY "stock_movements_insert_admin_staff"
+  ON stock_movements FOR INSERT
+  TO authenticated WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role IN ('admin','mitarbeiter'))
+  );
+
+-- Movements are append-only: no UPDATE/DELETE policies, so non-superuser
+-- writes are silently denied. Corrections happen via a new 'korrektur' row.

@@ -1,9 +1,21 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { StockByCategory } from '@/components/dashboard/stock-by-category'
 import { RecentSales } from '@/components/dashboard/recent-sales'
 import { TopModels } from '@/components/dashboard/top-models'
 import { IncompleteDevices } from '@/components/dashboard/incomplete-devices'
+import { Button } from '@/components/ui/button'
+import { Plus, Upload } from 'lucide-react'
+
+function formatGermanDate(d: Date): string {
+  return d.toLocaleDateString('de-DE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -20,17 +32,46 @@ export default async function DashboardPage() {
   ])
 
   const kpiData = kpi.data ?? { geraete_im_lager: 0, bestandswert_ek: 0, umsatz_mtd: 0, marge_mtd: 0 }
+  const incompleteRows = incomplete.data ?? []
+  const openCount = incompleteRows.length
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+    <div className="max-w-[1280px] mx-auto space-y-[18px]">
+      <div className="kb-h-row flex-col md:flex-row items-start md:items-end gap-4 pb-4 mb-2 border-b border-[var(--rule-soft)]">
+        <div>
+          <div className="kb-label mb-1.5">Kontobuch · Tageseintrag</div>
+          <h1 className="kb-h1">{formatGermanDate(new Date())}</h1>
+          <div className="text-[13px] text-[var(--ink-3)] mt-1">
+            {openCount > 0 ? `${openCount} offene Aufgabe${openCount === 1 ? '' : 'n'}` : 'Keine offenen Aufgaben'} ·{' '}
+            {kpiData.geraete_im_lager} Geräte im Lager
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" asChild>
+            <Link href="/inventory/new">
+              <Upload className="h-3.5 w-3.5" />
+              Lieferschein scannen
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/inventory/new">
+              <Plus className="h-3.5 w-3.5" />
+              Gerät anlegen
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <IncompleteDevices rows={incompleteRows} isAdmin={isAdmin} />
+
       <KpiCards data={kpiData} />
-      <IncompleteDevices rows={incomplete.data ?? []} isAdmin={isAdmin} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <StockByCategory rows={stock.data ?? []} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-[18px]">
+        <RecentSales rows={recent.data ?? []} />
         <TopModels rows={top.data ?? []} />
       </div>
-      <RecentSales rows={recent.data ?? []} />
+
+      <StockByCategory rows={stock.data ?? []} />
     </div>
   )
 }

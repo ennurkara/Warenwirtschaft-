@@ -2,24 +2,17 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { DeviceCard } from '@/components/inventory/device-card'
-import { getStatusLabel, formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { getColumnsForCategory, COLUMN_KEY, ColumnKey } from '@/lib/category-columns'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
-import type { Device, Category, DeviceStatus } from '@/lib/types'
-
-const STATUS_COLORS: Record<DeviceStatus, string> = {
-  lager:       'bg-green-100 text-green-800',
-  reserviert:  'bg-yellow-100 text-yellow-800',
-  verkauft:    'bg-blue-100 text-blue-800',
-  defekt:      'bg-red-100 text-red-800',
-  ausgemustert:'bg-slate-100 text-slate-800',
-}
+import { Search } from 'lucide-react'
+import type { Device, Category } from '@/lib/types'
 
 interface DeviceListProps {
   devices: Device[]
@@ -32,10 +25,11 @@ interface DeviceListProps {
 }
 
 export function DeviceList({
-  devices, categories, canAdd,
-  activeCategoryName, hideCategoryFilter, hideHeading,
+  devices, canAdd,
+  activeCategoryName, hideHeading,
   emptyMessage = 'Keine Geräte gefunden.',
 }: DeviceListProps) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
@@ -54,10 +48,10 @@ export function DeviceList({
 
   function cellValue(d: Device, key: ColumnKey): React.ReactNode {
     switch (key) {
-      case COLUMN_KEY.MODEL:        return <Link href={`/inventory/${d.id}`} className="font-medium hover:underline">{d.model?.modellname ?? '—'}</Link>
-      case COLUMN_KEY.MANUFACTURER: return d.model?.manufacturer?.name ?? '—'
-      case COLUMN_KEY.SERIAL:       return <span className="font-mono text-sm">{d.serial_number ?? '—'}</span>
-      case COLUMN_KEY.SW_SERIAL:    return <span className="font-mono text-sm">{d.vectron_details?.sw_serial ?? '—'}</span>
+      case COLUMN_KEY.MODEL:        return <Link href={`/inventory/${d.id}`} className="font-medium text-[var(--ink)] hover:text-[var(--blue)]">{d.model?.modellname ?? '—'}</Link>
+      case COLUMN_KEY.MANUFACTURER: return <span className="text-[var(--ink-2)]">{d.model?.manufacturer?.name ?? '—'}</span>
+      case COLUMN_KEY.SERIAL:       return <span className="kb-mono text-[12px] text-[var(--ink-2)]">{d.serial_number ?? '—'}</span>
+      case COLUMN_KEY.SW_SERIAL:    return <span className="kb-mono text-[12px] text-[var(--ink-2)]">{d.vectron_details?.sw_serial ?? '—'}</span>
       case COLUMN_KEY.FISKAL_2020:  return d.vectron_details ? (d.vectron_details.fiskal_2020 ? 'Ja' : 'Nein') : '—'
       case COLUMN_KEY.ZVT:          return d.vectron_details ? (d.vectron_details.zvt ? 'Ja' : 'Nein') : '—'
       case COLUMN_KEY.LICENSE_TYPE: {
@@ -65,11 +59,11 @@ export function DeviceList({
         if (!lt) return '—'
         return lt === 'full' ? 'Full' : 'Light'
       }
-      case COLUMN_KEY.EK:           return d.purchase_item ? formatCurrency(Number(d.purchase_item.ek_preis)) : '—'
-      case COLUMN_KEY.VK:           return d.sale_item ? formatCurrency(Number(d.sale_item.vk_preis)) : '—'
-      case COLUMN_KEY.STATUS:       { const st = deriveDisplayStatus(d); return <Badge className={STATUS_COLORS[st]}>{getStatusLabel(st)}</Badge> }
-      case COLUMN_KEY.LOCATION:     return d.location ?? '—'
-      case COLUMN_KEY.NAME:         return <Link href={`/inventory/${d.id}`} className="font-medium hover:underline">{d.model?.modellname ?? '—'}</Link>
+      case COLUMN_KEY.EK:           return d.purchase_item ? <span className="tabular-nums">{formatCurrency(Number(d.purchase_item.ek_preis))}</span> : '—'
+      case COLUMN_KEY.VK:           return d.sale_item ? <span className="tabular-nums">{formatCurrency(Number(d.sale_item.vk_preis))}</span> : '—'
+      case COLUMN_KEY.STATUS:       return <StatusBadge status={deriveDisplayStatus(d)} />
+      case COLUMN_KEY.LOCATION:     return <span className="text-[var(--ink-2)]">{d.location ?? '—'}</span>
+      case COLUMN_KEY.NAME:         return <Link href={`/inventory/${d.id}`} className="font-medium text-[var(--ink)] hover:text-[var(--blue)]">{d.model?.modellname ?? '—'}</Link>
       default: return '—'
     }
   }
@@ -78,13 +72,21 @@ export function DeviceList({
     <div className="space-y-4">
       {!hideHeading && (
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{activeCategoryName ?? 'Inventar'}</h1>
-          {canAdd && <Link href="/inventory/new"><Button>Gerät hinzufügen</Button></Link>}
+          <h1 className="kb-h1">{activeCategoryName ?? 'Inventar'}</h1>
+          {canAdd && <Link href="/inventory/new"><Button>Gerät anlegen</Button></Link>}
         </div>
       )}
 
       <div className="flex flex-col gap-2 md:flex-row md:gap-3">
-        <Input placeholder="Suchen (Name, Seriennr, SW-SN)..." value={search} onChange={e => setSearch(e.target.value)} className="w-full md:max-w-sm" />
+        <div className="relative w-full md:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--ink-3)] pointer-events-none" />
+          <Input
+            placeholder="Suchen · Name, Seriennr., SW-SN…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-48"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
@@ -100,39 +102,45 @@ export function DeviceList({
 
       {/* Mobile cards */}
       <div className="flex flex-col gap-2 md:hidden">
-        {filtered.length === 0 && <p className="text-slate-500 text-sm py-8 text-center">{emptyMessage}</p>}
+        {filtered.length === 0 && <p className="text-[var(--ink-3)] text-sm py-8 text-center">{emptyMessage}</p>}
         {filtered.map(device => <DeviceCard key={device.id} device={device} />)}
       </div>
 
-      {/* Desktop table */}
-      <div className="hidden md:block rounded-md border bg-white overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
+      {/* Desktop ledger table */}
+      <div className="hidden md:block rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+        <table className="kb-table">
+          <thead>
+            <tr>
               {columns.map(col => (
-                <TableHead key={col.key} className={col.align === 'right' ? 'text-right' : ''}>
+                <th key={col.key} className={col.align === 'right' ? 'num' : ''}>
                   {col.label}
-                </TableHead>
+                </th>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+            </tr>
+          </thead>
+          <tbody>
             {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center text-slate-500 py-8">{emptyMessage}</TableCell>
-              </TableRow>
+              <tr>
+                <td colSpan={columns.length} className="text-center text-[var(--ink-3)] py-10">
+                  {emptyMessage}
+                </td>
+              </tr>
             )}
             {filtered.map(device => (
-              <TableRow key={device.id} className="cursor-pointer hover:bg-slate-50">
+              <tr
+                key={device.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/inventory/${device.id}`)}
+              >
                 {columns.map(col => (
-                  <TableCell key={col.key} className={col.align === 'right' ? 'text-right' : ''}>
+                  <td key={col.key} className={col.align === 'right' ? 'num' : ''}>
                     {cellValue(device, col.key)}
-                  </TableCell>
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
     </div>
   )

@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { DeviceList } from './device-list'
 import type { Device, Category } from '@/lib/types'
 
@@ -25,22 +26,31 @@ export function CategoryDeviceList({
   emptyMessage,
 }: CategoryDeviceListProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <Link href="/inventory" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Inventar
+    <div className="max-w-[1280px] mx-auto space-y-[18px]">
+      <div className="kb-h-row flex-col md:flex-row items-start md:items-end gap-4 pb-4 mb-2 border-b border-[var(--rule-soft)]">
+        <div>
+          <Link
+            href="/inventory"
+            className="inline-flex items-center gap-1.5 text-[12px] text-[var(--ink-3)] hover:text-[var(--ink)] transition-colors mb-2"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Zurück zur Übersicht
           </Link>
-          <span className="text-muted-foreground mx-2">/</span>
-          <span className="text-sm font-medium">{categoryName}</span>
+          <h1 className="kb-h1">{categoryName}</h1>
+          <div className="text-[13px] text-[var(--ink-3)] mt-1">
+            {devices.length} Gerät{devices.length === 1 ? '' : 'e'} in dieser Kategorie
+          </div>
         </div>
         {canAdd && (
-          <Link href="/inventory/new" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            Gerät hinzufügen
-          </Link>
+          <Button asChild>
+            <Link href="/inventory/new">
+              <Plus className="h-3.5 w-3.5" />
+              Gerät anlegen
+            </Link>
+          </Button>
         )}
       </div>
+
       <DeviceList
         devices={devices}
         categories={categories}

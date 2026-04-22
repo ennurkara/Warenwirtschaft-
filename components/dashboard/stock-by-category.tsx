@@ -4,20 +4,43 @@ interface Row { category_name: string; anzahl_im_lager: number; bestandswert_ek:
 
 export function StockByCategory({ rows }: { rows: Row[] }) {
   const max = Math.max(1, ...rows.map(r => r.anzahl_im_lager))
+  const total = rows.reduce((a, b) => a + b.anzahl_im_lager, 0)
+
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <h3 className="font-medium mb-3">Bestand nach Kategorie</h3>
-      <ul className="space-y-2">
-        {rows.map(r => (
-          <li key={r.category_name} className="grid grid-cols-[1fr_4fr_auto] gap-3 items-center text-sm">
-            <span>{r.category_name}</span>
-            <div className="h-4 bg-slate-100 rounded overflow-hidden">
-              <div className="h-full bg-blue-500" style={{ width: `${(r.anzahl_im_lager / max) * 100}%` }} />
+    <div className="rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+      <div className="kb-sec-head">
+        <h3>Bestand nach Kategorie</h3>
+        <span className="count">
+          {total} Geräte · {rows.length} Kat.
+        </span>
+      </div>
+      <div className="px-4 py-3">
+        {rows.length === 0 ? (
+          <div className="py-4 text-center text-[13px] text-[var(--ink-3)]">
+            Noch keine Daten.
+          </div>
+        ) : (
+          rows.map((r, i) => (
+            <div
+              key={r.category_name}
+              className="grid grid-cols-[140px_1fr_auto] gap-3 items-center py-[7px]"
+              style={{
+                borderBottom: i < rows.length - 1 ? '1px dashed var(--rule-soft)' : 'none',
+              }}
+            >
+              <span className="text-[13px] text-[var(--ink-2)] truncate">{r.category_name}</span>
+              <div className="kb-bar">
+                <span style={{ width: `${(r.anzahl_im_lager / max) * 100}%` }} />
+              </div>
+              <span className="kb-num text-[12px] text-[var(--ink-2)] text-right min-w-[120px]">
+                <b className="text-[var(--ink)] font-semibold">{r.anzahl_im_lager}</b>
+                <span className="text-[var(--ink-4)] mx-1">·</span>
+                {formatCurrency(Number(r.bestandswert_ek))}
+              </span>
             </div>
-            <span className="text-right tabular-nums">{r.anzahl_im_lager} · {formatCurrency(Number(r.bestandswert_ek))}</span>
-          </li>
-        ))}
-      </ul>
+          ))
+        )}
+      </div>
     </div>
   )
 }

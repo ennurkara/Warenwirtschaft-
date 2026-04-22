@@ -1,6 +1,9 @@
 // lib/types.ts
 export type UserRole = 'admin' | 'mitarbeiter' | 'viewer'
 export type DeviceStatus = 'lager' | 'reserviert' | 'verkauft' | 'defekt' | 'ausgemustert'
+export type CategoryKind = 'kassenhardware' | 'generic' | 'simple' | 'stock'
+export type Cluster = 'kassen' | 'druck' | 'mobile' | 'peripherie' | 'netzwerk_strom' | 'montage' | 'sonstiges'
+export type StockMovementKind = 'einkauf' | 'verkauf' | 'korrektur'
 
 export interface Profile {
   id: string
@@ -13,6 +16,8 @@ export interface Category {
   id: string
   name: string
   icon: string | null
+  kind: CategoryKind
+  cluster: Cluster
   created_at: string
 }
 
@@ -141,4 +146,27 @@ export interface OcrResult {
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+export interface StockItem {
+  id: string
+  model_id: string
+  quantity: number
+  location: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  model?: Model
+}
+
+export interface StockMovement {
+  id: string
+  stock_item_id: string
+  kind: StockMovementKind
+  delta: number
+  unit_price: number | null
+  reference_id: string | null
+  user_id: string
+  note: string | null
+  created_at: string
 }

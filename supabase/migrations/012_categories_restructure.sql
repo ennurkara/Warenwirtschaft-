@@ -28,3 +28,22 @@ DO $$ BEGIN
     ADD CONSTRAINT categories_cluster_check
     CHECK (cluster IN ('kassen', 'druck', 'mobile', 'peripherie', 'netzwerk_strom', 'montage', 'sonstiges'));
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 2. stock_items: one row per (Stock-)model with current quantity
+
+CREATE TABLE IF NOT EXISTS stock_items (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  model_id    uuid NOT NULL REFERENCES models(id) ON DELETE RESTRICT,
+  quantity    integer NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  location    text,
+  notes       text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS stock_items_model_uniq ON stock_items(model_id);
+
+DROP TRIGGER IF EXISTS stock_items_updated_at ON stock_items;
+CREATE TRIGGER stock_items_updated_at
+  BEFORE UPDATE ON stock_items
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

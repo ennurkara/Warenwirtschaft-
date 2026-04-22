@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchDevices } from '@/lib/inventory/queries'
+import { fetchStockItems } from '@/lib/inventory/stock-queries'
 import { CategoryGrid } from '@/components/inventory/category-grid'
 import { CategoryDeviceList } from '@/components/inventory/category-device-list'
+import { StockItemList } from '@/components/inventory/stock-item-list'
 import type { Category, CategoryWithCount, Profile } from '@/lib/types'
 
 interface PageProps {
@@ -67,23 +69,38 @@ export default async function InventoryPage({ searchParams }: PageProps) {
     )
   }
 
-  const [{ data: category }, devices, { data: categories }] = await Promise.all([
-    supabase.from('categories').select('*').eq('id', categoryId).single(),
-    fetchDevices(supabase, { categoryId }),
-    supabase.from('categories').select('*').order('name'),
-  ])
+  const { data: category } = await supabase.from('categories').select('*').eq('id', categoryId).single()
 
   if (!category) {
     redirect('/inventory')
   }
+
+  const cat = category as Category
+
+  if (cat.kind === 'stock') {
+    const items = await fetchStockItems(supabase, { categoryId })
+    return (
+      <StockItemList
+        items={items}
+        categoryName={cat.name}
+        canAdd={canAdd}
+      />
+    )
+  }
+
+  const [devices, { data: categories }] = await Promise.all([
+    fetchDevices(supabase, { categoryId }),
+    supabase.from('categories').select('*').order('name'),
+  ])
 
   return (
     <CategoryDeviceList
       devices={devices}
       categories={(categories ?? []) as Category[]}
       canAdd={canAdd}
-      categoryName={category.name}
-      activeCategoryName={category.name}
+      categoryName={cat.name}
+      activeCategoryName={cat.name}
+      activeCategoryKind={cat.kind}
       hideCategoryFilter
       emptyMessage="Keine Geräte in dieser Kategorie."
     />

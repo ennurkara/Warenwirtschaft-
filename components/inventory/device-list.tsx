@@ -9,16 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge } from '@/components/ui/status-badge'
 import { DeviceCard } from '@/components/inventory/device-card'
 import { formatCurrency } from '@/lib/utils'
-import { getColumnsForCategory, COLUMN_KEY, ColumnKey } from '@/lib/category-columns'
+import { getColumnsForKind, COLUMN_KEY, ColumnKey } from '@/lib/category-columns'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
 import { Search } from 'lucide-react'
-import type { Device, Category } from '@/lib/types'
+import type { Device, Category, CategoryKind } from '@/lib/types'
 
 interface DeviceListProps {
   devices: Device[]
   categories: Category[]
   canAdd: boolean
   activeCategoryName?: string
+  activeCategoryKind?: CategoryKind
   hideCategoryFilter?: boolean
   hideHeading?: boolean
   emptyMessage?: string
@@ -26,14 +27,14 @@ interface DeviceListProps {
 
 export function DeviceList({
   devices, canAdd,
-  activeCategoryName, hideHeading,
+  activeCategoryName, activeCategoryKind, hideHeading,
   emptyMessage = 'Keine Geräte gefunden.',
 }: DeviceListProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
-  const columns = useMemo(() => getColumnsForCategory(activeCategoryName ?? 'Unbekannt'), [activeCategoryName])
+  const columns = useMemo(() => getColumnsForKind(activeCategoryKind), [activeCategoryKind])
 
   const filtered = devices.filter(d => {
     const s = search.toLowerCase()

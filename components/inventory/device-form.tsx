@@ -27,7 +27,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
 
   const [category_id, setCategoryId] = useState('')
   const category = categories.find(c => c.id === category_id)
-  const isKassenhardware = category?.name === 'Kassenhardware'
+  const isKassenhardware = category?.kind === 'kassenhardware'
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const isVectron = selectedModel?.manufacturer?.name === 'Vectron'

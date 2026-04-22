@@ -1,16 +1,19 @@
+import type { CategoryKind } from '@/lib/types'
+
 export const COLUMN_KEY = {
   MODEL: 'model',
   MANUFACTURER: 'manufacturer',
-  SERIAL: 'serial',           // = devices.serial_number (HW-SN for Kassenhardware)
-  SW_SERIAL: 'sw_serial',     // Vectron-only
-  FISKAL_2020: 'fiskal_2020', // Vectron-only
-  ZVT: 'zvt',                 // Vectron-only
-  LICENSE_TYPE: 'license_type', // Vectron-only
+  SERIAL: 'serial',
+  SW_SERIAL: 'sw_serial',
+  FISKAL_2020: 'fiskal_2020',
+  ZVT: 'zvt',
+  LICENSE_TYPE: 'license_type',
   EK: 'ek',
   VK: 'vk',
   STATUS: 'status',
   LOCATION: 'location',
   NAME: 'name',
+  MENGE: 'menge',
 } as const
 
 export type ColumnKey = (typeof COLUMN_KEY)[keyof typeof COLUMN_KEY]
@@ -51,9 +54,21 @@ const SIMPLE_COLUMNS: ColumnDef[] = [
   { key: COLUMN_KEY.STATUS,       label: 'Status' },
 ]
 
-export function getColumnsForCategory(categoryName: string): ColumnDef[] {
-  const simple = new Set(['Kabel', 'Sonstiges'])
-  if (categoryName === 'Kassenhardware') return KASSENHARDWARE_COLUMNS
-  if (simple.has(categoryName)) return SIMPLE_COLUMNS
-  return GENERIC_DEVICE_COLUMNS
+const STOCK_COLUMNS: ColumnDef[] = [
+  { key: COLUMN_KEY.NAME,         label: 'Name' },
+  { key: COLUMN_KEY.MANUFACTURER, label: 'Hersteller' },
+  { key: COLUMN_KEY.MENGE,        label: 'Menge', align: 'right' },
+  { key: COLUMN_KEY.EK,           label: 'EK', align: 'right' },
+  { key: COLUMN_KEY.VK,           label: 'VK', align: 'right' },
+  { key: COLUMN_KEY.LOCATION,     label: 'Standort' },
+]
+
+export function getColumnsForKind(kind: CategoryKind | undefined): ColumnDef[] {
+  switch (kind) {
+    case 'kassenhardware': return KASSENHARDWARE_COLUMNS
+    case 'simple':         return SIMPLE_COLUMNS
+    case 'stock':          return STOCK_COLUMNS
+    case 'generic':
+    default:               return GENERIC_DEVICE_COLUMNS
+  }
 }

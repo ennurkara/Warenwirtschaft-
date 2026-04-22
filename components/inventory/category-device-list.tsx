@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DeviceList } from './device-list'
-import type { Device, Category } from '@/lib/types'
+import type { Device, Category, CategoryKind } from '@/lib/types'
 
 interface CategoryDeviceListProps {
   devices: Device[]
@@ -12,6 +12,7 @@ interface CategoryDeviceListProps {
   canAdd: boolean
   categoryName: string
   activeCategoryName?: string
+  activeCategoryKind?: CategoryKind
   hideCategoryFilter: boolean
   emptyMessage?: string
 }
@@ -22,6 +23,7 @@ export function CategoryDeviceList({
   canAdd,
   categoryName,
   activeCategoryName,
+  activeCategoryKind,
   hideCategoryFilter,
   emptyMessage,
 }: CategoryDeviceListProps) {
@@ -56,6 +58,7 @@ export function CategoryDeviceList({
         categories={categories}
         canAdd={canAdd}
         activeCategoryName={activeCategoryName ?? categoryName}
+        activeCategoryKind={activeCategoryKind}
         hideCategoryFilter={hideCategoryFilter}
         hideHeading
         emptyMessage={emptyMessage}

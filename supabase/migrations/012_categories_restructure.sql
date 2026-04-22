@@ -47,3 +47,24 @@ DROP TRIGGER IF EXISTS stock_items_updated_at ON stock_items;
 CREATE TRIGGER stock_items_updated_at
   BEFORE UPDATE ON stock_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 3. stock_movements: audit log of every quantity delta
+
+DO $$ BEGIN
+  CREATE TYPE stock_movement_kind AS ENUM ('einkauf', 'verkauf', 'korrektur');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  stock_item_id  uuid NOT NULL REFERENCES stock_items(id) ON DELETE CASCADE,
+  kind           stock_movement_kind NOT NULL,
+  delta          integer NOT NULL CHECK (delta <> 0),
+  unit_price     numeric(10,2),
+  reference_id   uuid,
+  user_id        uuid NOT NULL REFERENCES profiles(id),
+  note           text,
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS stock_movements_item_idx ON stock_movements(stock_item_id);
+CREATE INDEX IF NOT EXISTS stock_movements_created_idx ON stock_movements(created_at DESC);

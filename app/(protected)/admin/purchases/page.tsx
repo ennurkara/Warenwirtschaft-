@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
+type PurchaseItemRow = { ek_preis: number }
+type PurchaseRow = {
+  id: string
+  rechnungsnr: string | null
+  datum: string
+  supplier: { name: string } | null
+  items: PurchaseItemRow[] | null
+}
+
 export default async function Page() {
   const supabase = await createClient()
   const { data } = await supabase.from('purchases')
@@ -19,8 +28,8 @@ export default async function Page() {
             <TableHead className="text-right">Summe</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {(data ?? []).map((p: any) => {
-              const total = (p.items ?? []).reduce((s: number, i: any) => s + Number(i.ek_preis), 0)
+            {((data ?? []) as unknown as PurchaseRow[]).map(p => {
+              const total = (p.items ?? []).reduce((s: number, i: PurchaseItemRow) => s + Number(i.ek_preis), 0)
               return (
                 <TableRow key={p.id}>
                   <TableCell>{formatDate(p.datum)}</TableCell>

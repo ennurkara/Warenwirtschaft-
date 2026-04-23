@@ -27,7 +27,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
 
     // Count devices per category via models
     const modelIds = (devices ?? []).map(d => d.model_id).filter(Boolean)
-    let countMap: Record<string, number> = {}
+    const countMap: Record<string, number> = {}
     if (modelIds.length > 0) {
       const { data: models } = await supabase.from('models').select('id, category_id').in('id', modelIds)
       for (const m of models ?? []) {

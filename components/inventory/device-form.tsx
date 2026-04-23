@@ -172,7 +172,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
             <legend className="px-2 text-sm font-medium">Einkauf <span className="text-slate-500 font-normal">(optional)</span></legend>
             {selectedModel && !modelHasSupplier && !modelHasEk && (
               <p className="text-xs text-amber-600">
-                Kein Standard-Lieferant und kein Standardpreis am Modell hinterlegt. Beleg bleibt leer — Admin ergänzt später. Das Gerät erscheint im Dashboard unter „Unvollständige Geräte".
+                Kein Standard-Lieferant und kein Standardpreis am Modell hinterlegt. Beleg bleibt leer — Admin ergänzt später. Das Gerät erscheint im Dashboard unter &bdquo;Unvollständige Geräte&ldquo;.
               </p>
             )}
             <EntityPicker table="suppliers" label="Lieferant" value={purchase.supplier_id} onChange={v => setPurchase(p => ({ ...p, supplier_id: v }))} />

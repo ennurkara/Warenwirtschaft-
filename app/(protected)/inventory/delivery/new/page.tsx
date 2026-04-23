@@ -51,20 +51,22 @@ export default function NewDeliveryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Lieferschein scannen</h1>
       {!ocr && (
         <DeliveryUpload
           onResult={(data, preview) => { setOcr(data); setPreviewUrl(preview) }}
         />
       )}
       {ocr && (
-        <DeliveryReview
-          ocr={ocr}
-          categories={categories}
-          models={models}
-          previewUrl={previewUrl}
-          onModelsRefresh={refreshModels}
-        />
+        <>
+          <h1 className="text-2xl font-semibold">Lieferschein scannen</h1>
+          <DeliveryReview
+            ocr={ocr}
+            categories={categories}
+            models={models}
+            previewUrl={previewUrl}
+            onModelsRefresh={refreshModels}
+          />
+        </>
       )}
     </div>
   )

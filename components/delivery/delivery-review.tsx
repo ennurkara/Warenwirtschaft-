@@ -10,6 +10,7 @@ import { EntityPicker } from '@/components/inventory/entity-picker'
 import { DeliveryItemRow } from '@/components/delivery/delivery-item-row'
 import { toast } from 'sonner'
 import type { LieferscheinOcrResponse, LieferscheinRowDraft, Category, Model, LieferscheinRpcPayload } from '@/lib/types'
+import { normalizeCompanyName } from '@/lib/company-match'
 
 interface Props {
   ocr: LieferscheinOcrResponse
@@ -24,11 +25,18 @@ function expandOcrToRows(ocr: LieferscheinOcrResponse, models: Model[]): Liefers
   let counter = 0
   for (const item of ocr.items) {
     const expand = item.quantity > 1 && !item.serial_number ? item.quantity : 1
+    const ocrMfr = normalizeCompanyName(item.manufacturer)
+    const ocrModel = (item.name ?? '').toLowerCase().trim()
     for (let i = 0; i < expand; i++) {
-      const match = models.find(m =>
-        m.manufacturer?.name?.toLowerCase() === item.manufacturer?.toLowerCase() &&
-        m.modellname?.toLowerCase() === item.name?.toLowerCase(),
-      )
+      const match = ocrMfr && ocrModel
+        ? models.find(m => {
+            const mfr = normalizeCompanyName(m.manufacturer?.name)
+            if (!mfr) return false
+            const modelName = (m.modellname ?? '').toLowerCase().trim()
+            const mfrMatch = mfr === ocrMfr || mfr.includes(ocrMfr) || ocrMfr.includes(mfr)
+            return mfrMatch && modelName === ocrModel
+          })
+        : undefined
       rows.push({
         client_id: `r${counter++}`,
         manufacturer_id: match?.manufacturer_id ?? null,
@@ -122,7 +130,7 @@ export function DeliveryReview({ ocr, categories, models, previewUrl, onModelsRe
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div><Label>Rechnungsnr</Label><Input value={rechnungsnr} onChange={e => setRechnungsnr(e.target.value)} /></div>
           <div><Label>Datum</Label><Input type="date" value={datum} onChange={e => setDatum(e.target.value)} /></div>
-          <div><EntityPicker table="suppliers" label="Lieferant" value={supplier_id} onChange={setSupplierId} /></div>
+          <div><EntityPicker table="suppliers" label="Lieferant" value={supplier_id} onChange={setSupplierId} prefillNameHint={ocr.supplier} /></div>
         </div>
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full text-sm">

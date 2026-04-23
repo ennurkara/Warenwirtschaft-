@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { findCompanyMatches } from '@/lib/company-match'
 
 type EntityTable = 'suppliers' | 'customers'
 
@@ -17,13 +18,17 @@ interface EntityPickerProps {
   label: string
   value: string
   onChange: (id: string) => void
+  /** If set and the current value is empty, attempts a fuzzy match once after load
+   *  and auto-selects the entity if exactly one candidate matches. */
+  prefillNameHint?: string | null
 }
 
-export function EntityPicker({ table, label, value, onChange }: EntityPickerProps) {
+export function EntityPicker({ table, label, value, onChange, prefillNameHint }: EntityPickerProps) {
   const supabase = createClient()
   const [items, setItems] = useState<Entity[]>([])
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '' })
+  const prefillTriedRef = useRef(false)
 
   async function refresh() {
     const { data } = await supabase.from(table).select('id, name, email, phone, address').order('name')
@@ -31,6 +36,16 @@ export function EntityPicker({ table, label, value, onChange }: EntityPickerProp
   }
 
   useEffect(() => { refresh() }, [])
+
+  useEffect(() => {
+    if (prefillTriedRef.current) return
+    if (value) return
+    if (!prefillNameHint) return
+    if (items.length === 0) return
+    prefillTriedRef.current = true
+    const matches = findCompanyMatches(items, prefillNameHint)
+    if (matches.length === 1) onChange(matches[0].id)
+  }, [items, prefillNameHint, value, onChange])
 
   async function create() {
     if (!form.name) { toast.error('Name ist Pflicht'); return }

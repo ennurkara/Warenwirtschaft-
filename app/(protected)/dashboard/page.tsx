@@ -1,12 +1,9 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { StockByCategory } from '@/components/dashboard/stock-by-category'
 import { RecentSales } from '@/components/dashboard/recent-sales'
 import { TopModels } from '@/components/dashboard/top-models'
 import { IncompleteDevices } from '@/components/dashboard/incomplete-devices'
-import { Button } from '@/components/ui/button'
-import { Plus, Upload } from 'lucide-react'
 
 function formatGermanDate(d: Date): string {
   return d.toLocaleDateString('de-DE', {
@@ -45,20 +42,6 @@ export default async function DashboardPage() {
             {openCount > 0 ? `${openCount} offene Aufgabe${openCount === 1 ? '' : 'n'}` : 'Keine offenen Aufgaben'} ·{' '}
             {kpiData.geraete_im_lager} Geräte im Lager
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" asChild>
-            <Link href="/inventory/new">
-              <Upload className="h-3.5 w-3.5" />
-              Lieferschein scannen
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/inventory/new">
-              <Plus className="h-3.5 w-3.5" />
-              Gerät anlegen
-            </Link>
-          </Button>
         </div>
       </div>
 

@@ -71,8 +71,8 @@ export function DeliveryReview({ ocr, categories, models, previewUrl, onModelsRe
   }
 
   const isPdf = useMemo(
-    () => previewUrl.toLowerCase().endsWith('.pdf') || previewUrl.includes('application/pdf'),
-    [previewUrl],
+    () => ocr.source_path.toLowerCase().endsWith('.pdf'),
+    [ocr.source_path],
   )
 
   async function save() {
@@ -113,10 +113,10 @@ export function DeliveryReview({ ocr, categories, models, previewUrl, onModelsRe
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="border rounded-lg bg-slate-50 overflow-hidden min-h-[500px]">
+      <div className="border rounded-lg bg-slate-50 overflow-hidden flex items-center justify-center" style={{ height: '80vh' }}>
         {isPdf
-          ? <iframe src={previewUrl} className="w-full h-[80vh]" title="Lieferschein" />
-          : <img src={previewUrl} alt="Lieferschein" className="max-w-full h-auto" />}
+          ? <iframe src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} className="w-full h-full border-0" title="Lieferschein" />
+          : <img src={previewUrl} alt="Lieferschein" className="max-w-full max-h-full object-contain" />}
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

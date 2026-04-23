@@ -170,3 +170,48 @@ export interface StockMovement {
   note: string | null
   created_at: string
 }
+
+// ---------- Lieferscheinmodus ----------
+export interface LieferscheinOcrItem {
+  manufacturer: string | null
+  name: string | null
+  serial_number: string | null
+  quantity: number
+  ek_preis: number | null
+}
+
+export interface LieferscheinOcrResponse {
+  supplier: string | null
+  rechnungsnr: string | null
+  datum: string | null            // ISO YYYY-MM-DD
+  source_path: string
+  items: LieferscheinOcrItem[]
+}
+
+export interface LieferscheinRowDraft {
+  client_id: string               // React key, not persisted
+  manufacturer_id: string | null
+  model_id: string | null
+  category_id: string | null      // derived from model when possible
+  serial_number: string | null
+  location: string | null
+  notes: string | null
+  ek_preis: number | null
+  // Prefilled OCR values kept for UI hints when no DB match exists
+  ocr_manufacturer: string | null
+  ocr_name: string | null
+}
+
+export interface LieferscheinRpcPayload {
+  supplier_id: string
+  rechnungsnr: string | null
+  datum: string                   // ISO YYYY-MM-DD
+  source_document_path: string
+  items: Array<{
+    model_id: string
+    serial_number: string | null
+    location: string | null
+    notes: string | null
+    ek_preis: number | null
+  }>
+}

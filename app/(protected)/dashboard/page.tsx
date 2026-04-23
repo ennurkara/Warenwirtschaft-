@@ -20,9 +20,10 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
   const isAdmin = profile?.role === 'admin'
 
-  const [kpi, stock, recent, top, incomplete] = await Promise.all([
+  const [kpi, overview, stockValue, recent, top, incomplete] = await Promise.all([
     supabase.from('v_dashboard_kpis').select('*').single(),
-    supabase.from('v_stock_by_category').select('*'),
+    supabase.from('v_inventory_overview').select('category_id, category_name, unit_count'),
+    supabase.from('v_stock_by_category').select('category_id, bestandswert_ek'),
     supabase.from('v_recent_sales').select('*'),
     supabase.from('v_top_models_revenue').select('*'),
     supabase.from('v_incomplete_devices').select('*'),
@@ -31,6 +32,18 @@ export default async function DashboardPage() {
   const kpiData = kpi.data ?? { geraete_im_lager: 0, bestandswert_ek: 0, umsatz_mtd: 0, marge_mtd: 0 }
   const incompleteRows = incomplete.data ?? []
   const openCount = incompleteRows.length
+
+  const valueByCat = new Map<string, number>()
+  for (const row of stockValue.data ?? []) {
+    valueByCat.set(row.category_id, Number(row.bestandswert_ek ?? 0))
+  }
+  const stockRows = (overview.data ?? [])
+    .map(r => ({
+      category_name: r.category_name,
+      anzahl_im_lager: Number(r.unit_count ?? 0),
+      bestandswert_ek: valueByCat.get(r.category_id) ?? 0,
+    }))
+    .filter(r => r.anzahl_im_lager > 0)
 
   return (
     <div className="max-w-[1280px] mx-auto space-y-[18px]">
@@ -54,7 +67,7 @@ export default async function DashboardPage() {
         <TopModels rows={top.data ?? []} />
       </div>
 
-      <StockByCategory rows={stock.data ?? []} />
+      <StockByCategory rows={stockRows} />
     </div>
   )
 }

@@ -12,4 +12,18 @@ const config: Config = {
   },
 }
 
-export default createJestConfig(config)
+// nextJest prepends '/node_modules/' which shadows any per-package exceptions.
+// We resolve the config and then replace transformIgnorePatterns so that
+// pdf-to-img (ESM-only) and pdfjs-dist are transformed by Babel/SWC.
+async function jestConfig(): Promise<Config> {
+  const resolved = await createJestConfig(config)()
+  return {
+    ...resolved,
+    transformIgnorePatterns: [
+      '/node_modules/(?!(pdf-to-img|pdfjs-dist)/)',
+      '^.+\\.module\\.(css|sass|scss)$',
+    ],
+  }
+}
+
+export default jestConfig

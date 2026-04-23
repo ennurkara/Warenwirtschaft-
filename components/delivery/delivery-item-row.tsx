@@ -89,7 +89,7 @@ export function DeliveryItemRow({ row, categories, models, onChange, onRemove, o
             </Button>
           </div>
           {row.ocr_name && !row.model_id && (
-            <p className="text-xs text-amber-600 mt-1">OCR: „{row.ocr_name}"</p>
+            <p className="text-xs text-amber-600 mt-1">{'OCR: „'}{row.ocr_name}{'"'}</p>
           )}
           {!canCreateModel && row.manufacturer_id && !row.category_id && (
             <p className="text-xs text-slate-500 mt-1">Erst Kategorie wählen, dann neues Modell anlegen.</p>

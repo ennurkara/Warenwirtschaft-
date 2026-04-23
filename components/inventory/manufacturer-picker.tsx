@@ -52,7 +52,7 @@ export function ManufacturerPicker({ value, onChange, hint }: ManufacturerPicker
         </Button>
       </div>
       {hint && !value && !showNew && (
-        <p className="text-xs text-amber-600">OCR: „{hint}" — nicht in DB, bitte wählen oder anlegen.</p>
+        <p className="text-xs text-amber-600">{'OCR: „'}{hint}{'" — nicht in DB, bitte wählen oder anlegen.'}</p>
       )}
       {showNew && (
         <div className="border rounded p-2 space-y-2 bg-slate-50">

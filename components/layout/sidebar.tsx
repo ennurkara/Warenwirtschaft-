@@ -16,12 +16,14 @@ import {
   Settings,
   Factory,
   Tag,
+  ScanLine,
   LogOut,
 } from 'lucide-react'
 
 const mainLinks = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, kb: '1' },
-  { href: '/inventory', label: 'Inventar',  icon: Package,         kb: '2' },
+  { href: '/dashboard',              label: 'Dashboard',            icon: LayoutDashboard, kb: '1' },
+  { href: '/inventory',              label: 'Inventar',             icon: Package,         kb: '2' },
+  { href: '/inventory/delivery/new', label: 'Lieferschein scannen', icon: ScanLine,        kb: '3' },
 ]
 
 const adminLinks = [
@@ -69,7 +71,9 @@ export function Sidebar({ profile }: { profile: Profile }) {
       <div className="px-1 pt-2">
         <div className="kb-label px-3 mb-1">Betrieb</div>
         {mainLinks.map(({ href, label, icon: Icon, kb }) => {
-          const active = pathname.startsWith(href)
+          const active = href === '/inventory'
+            ? pathname === '/inventory' || (pathname.startsWith('/inventory/') && !pathname.startsWith('/inventory/delivery'))
+            : pathname.startsWith(href)
           return (
             <Link key={href} href={href} className={cn('kb-side-item', active && 'active')}>
               <Icon className="h-[15px] w-[15px]" strokeWidth={1.75} />

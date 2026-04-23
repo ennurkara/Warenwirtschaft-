@@ -39,3 +39,20 @@ export async function fetchDevice(supabase: SupabaseClient, id: string): Promise
   }
   return data as unknown as Device
 }
+
+export function countDevicesByCategory(
+  devices: Array<{ model_id: string | null }>,
+  models: Array<{ id: string; category_id: string | null }>,
+): Record<string, number> {
+  const modelToCategory = new Map<string, string>()
+  for (const m of models) {
+    if (m.category_id) modelToCategory.set(m.id, m.category_id)
+  }
+  const counts: Record<string, number> = {}
+  for (const d of devices) {
+    if (!d.model_id) continue
+    const catId = modelToCategory.get(d.model_id)
+    if (catId) counts[catId] = (counts[catId] ?? 0) + 1
+  }
+  return counts
+}

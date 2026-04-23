@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { fetchDevices } from '@/lib/inventory/queries'
+import { fetchDevices, countDevicesByCategory } from '@/lib/inventory/queries'
 import { fetchStockItems } from '@/lib/inventory/stock-queries'
 import { CategoryGrid } from '@/components/inventory/category-grid'
 import { CategoryDeviceList } from '@/components/inventory/category-device-list'
@@ -25,17 +25,13 @@ export default async function InventoryPage({ searchParams }: PageProps) {
       supabase.from('devices').select('model_id'),
     ])
 
-    // Count devices per category via models
-    const modelIds = (devices ?? []).map(d => d.model_id).filter(Boolean)
-    const countMap: Record<string, number> = {}
-    if (modelIds.length > 0) {
-      const { data: models } = await supabase.from('models').select('id, category_id').in('id', modelIds)
-      for (const m of models ?? []) {
-        if (m.category_id) {
-          countMap[m.category_id] = (countMap[m.category_id] ?? 0) + 1
-        }
-      }
-    }
+    const modelIds = Array.from(
+      new Set((devices ?? []).map(d => d.model_id).filter((id): id is string => !!id)),
+    )
+    const { data: models } = modelIds.length > 0
+      ? await supabase.from('models').select('id, category_id').in('id', modelIds)
+      : { data: [] as Array<{ id: string; category_id: string | null }> }
+    const countMap = countDevicesByCategory(devices ?? [], models ?? [])
 
     const categoriesWithCount: CategoryWithCount[] = (categories ?? []).map(c => ({
       ...c,

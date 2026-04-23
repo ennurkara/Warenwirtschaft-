@@ -28,32 +28,38 @@ export async function POST(req: NextRequest) {
 
   type ModelShape = { modellname: string; manufacturer: { name: string } | null; category: { name: string } | null } | null
 
-  const inventoryText = (devices ?? [])
-    .map((d: Record<string, unknown>) => {
-      const model = d.model as ModelShape
-      const modelName = model?.modellname ?? 'Unbekannt'
-      const manufacturer = model?.manufacturer?.name ?? 'Unbekannt'
-      const category = model?.category?.name ?? 'Unbekannt'
-      return `- SN: ${d.serial_number ?? 'n/a'} | ${manufacturer} ${modelName} (${category}) | Status: ${d.status} | Ort: ${d.location ?? 'n/a'}`
-    })
-    .join('\n')
+  const deviceLines = (devices ?? []).map((d: Record<string, unknown>) => {
+    const model = d.model as ModelShape
+    const modelName = model?.modellname ?? 'Unbekanntes Modell'
+    const manufacturer = model?.manufacturer?.name ?? '—'
+    const category = model?.category?.name ?? '—'
+    const location = (d.location as string) ? ` @ ${d.location}` : ''
+    return `- [${d.serial_number ?? '?'}] ${manufacturer} ${modelName} (${category}) — ${d.status}${location}`
+  })
 
-  // Call OpenAI with inventory context
+  const deviceCount = deviceLines.length
+  const inventoryText = deviceCount > 0 ? deviceLines.join('\n') : '(keine Geräte im Bestand)'
+
+  const systemPrompt = `Du bist der Lager-Assistent einer Warenwirtschaft für Kassen-/POS-Hardware.
+
+Regeln:
+- Antworte knapp, sachlich, auf Deutsch. Keine Floskeln, keine Wiederholung der Frage.
+- Nutze ausschließlich die unten gelisteten Geräte. Erfinde keine Seriennummern, Hersteller oder Modelle.
+- Bei Zählfragen: nenne die Zahl zuerst, danach 1–3 Beispiele.
+- Wenn nichts passt: "Keine passenden Geräte im aktuellen Bestand."
+- Kategorien sind fest vorgegeben (Kassen, Drucker, Kartenterminals, Handscanner, Kundendisplays, usw.). Bei Fragen nach einer Kategorie exakt filtern.
+
+Ausgabe: ausschließlich JSON { "reply": "..." }.
+
+Geräte (Status ≠ ausgemustert, ${deviceCount} insgesamt, Format: [Seriennummer] Hersteller Modell (Kategorie) — Status @ Ort):
+${inventoryText}`
+
   const openai = new OpenAI({ apiKey: openaiKey })
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [
-      {
-        role: 'system',
-        content: `Du bist ein freundlicher Lager-Assistent für ein Warenwirtschaftssystem. Beantworte Fragen zum Inventar auf Deutsch. Antworte immer als JSON: { "reply": "deine antwort" }
-
-Aktueller Inventarstand:
-${inventoryText}`,
-      },
-      {
-        role: 'user',
-        content: body.message,
-      },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: body.message },
     ],
     max_tokens: 500,
     response_format: { type: 'json_object' },

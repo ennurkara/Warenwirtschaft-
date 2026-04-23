@@ -57,6 +57,7 @@ describe('POST /api/lieferschein/ocr', () => {
   beforeEach(() => {
     mockCreate.mockReset()
     uploadMock.mockClear()
+    removeMock.mockClear()
   })
 
   it('returns 400 when file is missing', async () => {
@@ -110,5 +111,22 @@ describe('POST /api/lieferschein/ocr', () => {
     mockCreate.mockRejectedValueOnce(new Error('timeout'))
     const res = await POST(makeRequest(new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })))
     expect(res.status).toBe(502)
+  })
+
+  it('removes the uploaded file when OpenAI fails (no orphan)', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('timeout'))
+    const res = await POST(makeRequest(new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })))
+    expect(res.status).toBe(502)
+    expect(removeMock).toHaveBeenCalledTimes(1)
+    const [removedKeys] = removeMock.mock.calls[0]
+    expect(Array.isArray(removedKeys) && removedKeys.length).toBe(1)
+    expect(String(removedKeys[0])).toMatch(/\.(jpg|png|pdf)$/)
+  })
+
+  it('removes the uploaded file when JSON parsing fails', async () => {
+    mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: '<<not-json>>' } }] })
+    const res = await POST(makeRequest(new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' })))
+    expect(res.status).toBe(502)
+    expect(removeMock).toHaveBeenCalledTimes(1)
   })
 })

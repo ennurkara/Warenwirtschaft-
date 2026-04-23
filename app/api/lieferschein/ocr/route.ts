@@ -101,6 +101,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'storage upload failed' }, { status: 500 })
   }
 
+  const failAndCleanup = async (status: number, body: Record<string, unknown>) => {
+    const { error: rmErr } = await supabase.storage.from('lieferscheine').remove([keyInBucket])
+    if (rmErr) {
+      console.error('Cleanup after error failed', { user: user.id, key: keyInBucket, err: rmErr.message })
+    }
+    return NextResponse.json(body, { status })
+  }
+
   // --- Build Vision content ---
   const userContent: VisionPart[] = [
     { type: 'text', text: 'Extrahiere die strukturierten Felder aus dem folgenden Lieferschein.' },
@@ -111,7 +119,7 @@ export async function POST(req: NextRequest) {
       pages = await renderPdfPages(buffer)
     } catch (e) {
       console.error('PDF render failed', { user: user.id, err: String(e) })
-      return NextResponse.json({ error: 'pdf render failed' }, { status: 502 })
+      return await failAndCleanup(502, { error: 'pdf render failed' })
     }
     for (const png of pages) {
       userContent.push({
@@ -144,7 +152,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     console.error('OpenAI vision failed', { user: user.id, source_path, err: String(e) })
-    return NextResponse.json({ error: 'ocr service error' }, { status: 502 })
+    return await failAndCleanup(502, { error: 'ocr service error' })
   }
 
   const raw = completion.choices[0]?.message?.content ?? '{}'
@@ -152,7 +160,7 @@ export async function POST(req: NextRequest) {
   try {
     parsed = JSON.parse(raw)
   } catch {
-    return NextResponse.json({ error: 'ocr returned non-json', raw }, { status: 502 })
+    return await failAndCleanup(502, { error: 'ocr returned non-json', raw })
   }
 
   return NextResponse.json({ ...parsed, source_path })

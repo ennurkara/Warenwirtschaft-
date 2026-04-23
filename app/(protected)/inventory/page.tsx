@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { fetchDevices, countDevicesByCategory } from '@/lib/inventory/queries'
+import { fetchDevices } from '@/lib/inventory/queries'
 import { fetchStockItems } from '@/lib/inventory/stock-queries'
 import { CategoryGrid } from '@/components/inventory/category-grid'
 import { CategoryDeviceList } from '@/components/inventory/category-device-list'
@@ -20,18 +20,18 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   const canAdd = (profile as Profile)?.role !== 'viewer'
 
   if (!categoryId) {
-    const [{ data: categories }, { data: devices }] = await Promise.all([
+    const [{ data: categories }, { data: overview }] = await Promise.all([
       supabase.from('categories').select('*').order('name'),
-      supabase.from('devices').select('model_id'),
+      supabase.from('v_inventory_overview').select('category_id, unit_count'),
     ])
 
-    const modelIds = Array.from(
-      new Set((devices ?? []).map(d => d.model_id).filter((id): id is string => !!id)),
-    )
-    const { data: models } = modelIds.length > 0
-      ? await supabase.from('models').select('id, category_id').in('id', modelIds)
-      : { data: [] as Array<{ id: string; category_id: string | null }> }
-    const countMap = countDevicesByCategory(devices ?? [], models ?? [])
+    const countMap: Record<string, number> = {}
+    let totalUnits = 0
+    for (const row of overview ?? []) {
+      const n = Number(row.unit_count ?? 0)
+      countMap[row.category_id] = n
+      totalUnits += n
+    }
 
     const categoriesWithCount: CategoryWithCount[] = (categories ?? []).map(c => ({
       ...c,
@@ -41,7 +41,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
     return (
       <CategoryGrid
         categories={categoriesWithCount}
-        totalDevices={devices?.length ?? 0}
+        totalDevices={totalUnits}
         canAdd={canAdd}
       />
     )

@@ -25,6 +25,8 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
 
+  const deviceCategories = categories.filter(c => c.kind !== 'stock')
+
   const [category_id, setCategoryId] = useState('')
   const category = categories.find(c => c.id === category_id)
   const isKassenhardware = category?.kind === 'kassenhardware'
@@ -56,6 +58,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!category_id) { toast.error('Kategorie wählen'); return }
+    if (category?.kind === 'stock') { toast.error('Bestandsartikel werden im Bestandsbereich erfasst'); return }
     if (!core.model_id) { toast.error('Modell wählen'); return }
 
     setIsLoading(true)
@@ -128,7 +131,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
         <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })); setPurchase(p => ({ ...p, supplier_id: '', ek_preis: '' })) }}>
           <SelectTrigger><SelectValue placeholder="Kategorie wählen..." /></SelectTrigger>
           <SelectContent>
-            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            {deviceCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

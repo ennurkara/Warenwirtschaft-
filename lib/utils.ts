@@ -33,6 +33,18 @@ export function formatCurrency(n: number): string {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n)
 }
 
+// Dezimalstunden -> "X h Y min" für Menschen. Spiegelt die Hilfsfunktion
+// in arbeitsbericht/lib/utils.ts (dort wird der Wert beim Wizard erzeugt).
+export function formatHoursMinutes(hours: number | null | undefined): string {
+  if (hours == null || !Number.isFinite(hours) || hours <= 0) return '—'
+  const totalMinutes = Math.round(hours * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h === 0) return `${m} min`
+  if (m === 0) return `${h} h`
+  return `${h} h ${m} min`
+}
+
 export function deviceDisplayName(
   model: Pick<Model, 'modellname' | 'variante'> & { manufacturer?: { name: string } | null } | null | undefined,
 ): string {

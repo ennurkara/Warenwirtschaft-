@@ -201,22 +201,12 @@
 .kb-table td.num, .kb-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .kb-table .row-n { color: var(--ink-4); font-family: var(--font-mono); font-size: 11px; width: 28px; text-align: right; padding-right: 14px; }
 
-/* KPI cell. Responsive: 1 col mobile, 2 cols tablet, 4 cols desktop. */
+/* KPI cell. Responsive rules live outside @layer components (see bottom of
+   file) because @media inside @layer trips some PostCSS pipelines. */
 .kb-kpi {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-}
-@media (min-width: 640px) {
-  .kb-kpi {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-}
-@media (min-width: 1024px) {
-  .kb-kpi {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 .kb-kpi-cell {
   padding: 16px 18px;
@@ -234,9 +224,6 @@
   margin-top: 6px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-}
-@media (min-width: 640px) {
-  .kb-kpi-cell .k-val { font-size: 28px; }
 }
 .kb-kpi-cell .k-val .unit { font-family: var(--font-sans); font-size: 14px; color: var(--ink-3); font-weight: 500; margin-left: 3px; }
 .kb-kpi-cell .k-delta { font-size: 12px; margin-top: 4px; color: var(--ink-3); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
@@ -300,9 +287,6 @@
   letter-spacing: -0.022em;
   color: var(--ink);
   margin: 0;
-}
-@media (min-width: 640px) {
-  .kb-h1 { font-size: 28px; line-height: 1.1; }
 }
 
 /* avatar */
@@ -376,5 +360,15 @@
   text-transform: uppercase;
 }
 
+}
+
+/* Responsive overrides — unlayered so they win after @layer components. */
+@media (min-width: 640px) {
+  .kb-kpi { gap: 14px; }
+  .kb-kpi-cell .k-val { font-size: 28px; }
+  .kb-h1 { font-size: 28px; line-height: 1.1; }
+}
+@media (min-width: 1024px) {
+  .kb-kpi { grid-template-columns: repeat(4, 1fr); }
 }
 

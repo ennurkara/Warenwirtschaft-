@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Download } from 'lucide-react'
-import { formatDateTime, deviceDisplayName } from '@/lib/utils'
+import { formatDateTime, deviceDisplayName, formatHoursMinutes } from '@/lib/utils'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -105,7 +105,7 @@ export default async function BerichtDetailPage({ params }: PageProps) {
             <p className="text-sm text-[var(--ink-3)]">{formatDateTime(report.start_time)}</p>
           )}
           {report.work_hours != null && (
-            <p className="text-sm text-[var(--ink-3)]">{report.work_hours}h Aufwand</p>
+            <p className="text-sm text-[var(--ink-3)]">{formatHoursMinutes(report.work_hours)} Aufwand</p>
           )}
           {report.travel_from && report.travel_to && (
             <p className="text-sm text-[var(--ink-3)]">

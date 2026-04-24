@@ -1,80 +1,129 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { DeviceForm } from '@/components/inventory/device-form'
-import { MovementDialog } from '@/components/inventory/movement-dialog'
-import { Badge } from '@/components/ui/badge'
-import { formatDate, getConditionLabel } from '@/lib/utils'
-import type { Device, Category, Profile, DeviceMovement } from '@/lib/types'
+import { fetchDevice } from '@/lib/inventory/queries'
+import { SellDialog } from '@/components/inventory/sell-dialog'
+import { AddPurchaseForm } from '@/components/inventory/add-purchase-form'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { formatDate, formatCurrency } from '@/lib/utils'
+import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
+import { ArrowLeft, AlertTriangle } from 'lucide-react'
+
+interface DetailFieldProps {
+  label: string
+  value: React.ReactNode
+  mono?: boolean
+}
+
+function DetailField({ label, value, mono }: DetailFieldProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="kb-label">{label}</span>
+      <span className={`text-[13.5px] text-[var(--ink)] ${mono ? 'font-mono tabular-nums' : ''}`}>
+        {value}
+      </span>
+    </div>
+  )
+}
 
 export default async function DeviceDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
 
-  const [{ data: device }, { data: categories }, { data: movements }] = await Promise.all([
-    supabase.from('devices').select('*, category:categories(*)').eq('id', params.id).single(),
-    supabase.from('categories').select('*').order('name'),
-    supabase.from('device_movements')
-      .select('*, profile:profiles(full_name)')
-      .eq('device_id', params.id)
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
-
+  const device = await fetchDevice(supabase, params.id)
   if (!device) notFound()
 
-  const isAdmin = (profile as Profile)?.role === 'admin'
-  const canMove = (profile as Profile)?.role !== 'viewer'
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
+  const isAdmin = profile?.role === 'admin'
+  const isIncomplete = !device.purchase_item
+
+  const displayStatus = deriveDisplayStatus(device)
+
+  const modelName = device.model?.modellname ?? '—'
+  const categoryName = device.model?.category?.name ?? '—'
+  const manufacturerName = device.model?.manufacturer?.name ?? '—'
+  const serialDisplay = device.serial_number ?? '—'
+  const ek = device.purchase_item ? formatCurrency(Number(device.purchase_item.ek_preis)) : null
+  const vk = device.sale_item ? formatCurrency(Number(device.sale_item.vk_preis)) : null
+  const v = device.vectron_details
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{device.name}</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {device.category?.name} · {getConditionLabel(device.condition)} · Menge: {device.quantity}
-          </p>
+    <div className="max-w-[1100px] mx-auto space-y-[18px]">
+      <div className="flex flex-col gap-3 pb-4 mb-1 border-b border-[var(--rule-soft)]">
+        <Link
+          href="/inventory"
+          className="inline-flex items-center gap-1.5 text-[12px] text-[var(--ink-3)] hover:text-[var(--ink)] transition-colors w-fit"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Zurück zum Inventar
+        </Link>
+        <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-end">
+          <div>
+            <div className="kb-label mb-1.5">
+              {categoryName} · {manufacturerName}
+            </div>
+            <h1 className="kb-h1">{modelName}</h1>
+            <div className="text-[13px] text-[var(--ink-3)] mt-1 font-mono">
+              {serialDisplay}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <StatusBadge status={displayStatus} />
+            {!device.sale_item && !isIncomplete && (device.status === 'lager' || device.status === 'reserviert') && (
+              <SellDialog deviceId={device.id} />
+            )}
+          </div>
         </div>
-        {canMove && (
-          <MovementDialog device={device as Device} />
-        )}
       </div>
+
+      {isIncomplete && !isAdmin && (
+        <div className="rounded-kb border-l-[3px] border-[var(--amber)] bg-[var(--amber-tint)]/70 px-[18px] py-3 text-[13px] text-[#8a5a17] flex items-start gap-2.5">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            Unvollständiges Gerät — Einkaufsdaten fehlen. Admin muss noch Lieferant und EK
+            nachpflegen, bevor das Gerät verkauft werden kann.
+          </span>
+        </div>
+      )}
 
       {device.photo_url && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={device.photo_url} alt={device.name} className="rounded-lg max-h-48 object-contain border" />
+        <img
+          src={device.photo_url}
+          alt={modelName}
+          className="rounded-kb max-h-56 object-contain border border-[var(--rule)] bg-white"
+        />
       )}
 
-      {isAdmin && (
-        <div>
-          <h2 className="text-lg font-medium mb-4">Gerät bearbeiten</h2>
-          <DeviceForm
-            categories={(categories ?? []) as Category[]}
-            device={device as Device}
-            isAdmin={isAdmin}
-          />
+      <div className="rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+        <div className="kb-sec-head">
+          <h3>Stammdaten</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-4 p-[18px]">
+          <DetailField label="Hardware-SN" value={serialDisplay} mono />
+          {v?.sw_serial && <DetailField label="Software-SN" value={v.sw_serial} mono />}
+          {v && <DetailField label="Lizenz" value={v.license_type === 'full' ? 'Full' : 'Light'} />}
+          {v && <DetailField label="Fiskal 2020" value={v.fiskal_2020 ? 'Ja' : 'Nein'} />}
+          {v && <DetailField label="ZVT" value={v.zvt ? 'Ja' : 'Nein'} />}
+          {ek && <DetailField label="EK" value={ek} mono />}
+          {vk && <DetailField label="VK" value={vk} mono />}
+          {device.location && <DetailField label="Standort" value={device.location} />}
+          <DetailField label="Hinzugefügt" value={formatDate(device.created_at)} />
+        </div>
+      </div>
+
+      {device.notes && (
+        <div className="rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+          <div className="kb-sec-head">
+            <h3>Notizen</h3>
+          </div>
+          <div className="p-[18px] text-[13.5px] text-[var(--ink)] whitespace-pre-wrap">
+            {device.notes}
+          </div>
         </div>
       )}
 
-      <div>
-        <h2 className="text-lg font-medium mb-3">Bewegungshistorie</h2>
-        {(movements ?? []).length === 0 ? (
-          <p className="text-slate-500 text-sm">Keine Bewegungen aufgezeichnet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {(movements as DeviceMovement[]).map(m => (
-              <li key={m.id} className="flex items-center gap-3 text-sm border rounded-md px-4 py-2 bg-white">
-                <Badge variant={m.action === 'entnahme' ? 'destructive' : 'default'}>
-                  {m.action === 'entnahme' ? 'Entnahme' : m.action === 'einlagerung' ? 'Einlagerung' : 'Defekt'}
-                </Badge>
-                <span>{m.quantity}x</span>
-                <span className="text-slate-500">von {m.profile?.full_name}</span>
-                <span className="ml-auto text-slate-400">{formatDate(m.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {isIncomplete && isAdmin && <AddPurchaseForm deviceId={device.id} />}
     </div>
   )
 }

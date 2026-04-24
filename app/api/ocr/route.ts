@@ -41,18 +41,26 @@ export async function POST(req: NextRequest) {
   const ocrText = mistralData.pages?.map((p: { markdown: string }) => p.markdown).join('\n') ?? ''
 
   // Step 2: OpenAI - structure the OCR text into JSON
+  const systemPrompt = `Du extrahierst aus OCR-Text eines Geräte-Typenschilds oder Etiketts strukturierte Felder für eine Warenwirtschaft für Kassen-/POS-Hardware.
+
+Felder:
+- manufacturer: Hersteller-Firmenname, kanonisch und ohne Rechtsform (z.B. "Apple" statt "Apple Inc.", "Epson" statt "Seiko Epson Corp.", "Ingenico" statt "Ingenico Group").
+- name: Modell-/Produktbezeichnung ohne Hersteller-Präfix (z.B. "iPhone 14 Pro", "TM-T88VI", "Moonlite 3", "Desk/5000").
+- serial_number: Seriennummer des Geräts. Markiert typischerweise mit "S/N", "Serial", "Serial No.", "Serien-Nr." oder "SN:". NICHT verwenden: MAC-Adresse, IMEI, Part-Number (P/N), Model-Number (M/N), Artikel-Nr., EAN/Barcode. Bei mehreren Kandidaten bevorzuge den mit "S/N"- oder "Serial"-Label.
+
+Regeln:
+- Werte nur aus dem OCR-Text ableiten, nicht raten.
+- Nicht eindeutig erkennbare Felder: null (nicht leerer String).
+- Keine Erklärungen, keine zusätzlichen Felder.
+
+Ausgabe: ausschließlich JSON { "name": ..., "serial_number": ..., "manufacturer": ... }.`
+
   const openai = new OpenAI({ apiKey: openaiKey })
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
-      {
-        role: 'system',
-        content: 'Extrahiere aus dem folgenden OCR-Text eines Geräte-Etiketts: Produktname, Seriennummer, Hersteller. Antworte ausschließlich als JSON: { "name": "...", "serial_number": "...", "manufacturer": "..." }. Setze null für nicht erkennbare Felder.',
-      },
-      {
-        role: 'user',
-        content: ocrText,
-      },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: ocrText },
     ],
     max_tokens: 200,
     response_format: { type: 'json_object' },

@@ -20,54 +20,46 @@ export async function POST(req: NextRequest) {
   // Fetch inventory context from Supabase (service role bypasses RLS)
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  const [{ data: devices }, { data: movements }] = await Promise.all([
-    supabase
-      .from('devices')
-      .select('name, quantity, status, condition, location, serial_number, categories(name)')
-      .neq('status', 'ausgemustert')
-      .order('name'),
-    supabase
-      .from('device_movements')
-      .select('action, quantity, created_at, devices(name), profiles(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
+  const { data: devices } = await supabase
+    .from('devices')
+    .select('id, serial_number, status, location, model:models(modellname, manufacturer:manufacturers(name), category:categories(name))')
+    .neq('status', 'ausgemustert')
+    .order('serial_number')
 
-  const inventoryText = (devices ?? [])
-    .map((d: Record<string, unknown>) => {
-      const cat = (d.categories as Record<string, string>)?.name ?? 'Unbekannt'
-      return `- ${d.name} (${cat}): ${d.quantity}x, Status: ${d.status}, Zustand: ${d.condition}, Ort: ${d.location ?? 'n/a'}, SN: ${d.serial_number ?? 'n/a'}`
-    })
-    .join('\n')
+  type ModelShape = { modellname: string; manufacturer: { name: string } | null; category: { name: string } | null } | null
 
-  const movementsText = (movements ?? [])
-    .map((m: Record<string, unknown>) => {
-      const device = (m.devices as Record<string, string>)?.name ?? 'Unbekannt'
-      const user = (m.profiles as Record<string, string>)?.full_name ?? 'Unbekannt'
-      const action = m.action === 'entnahme' ? 'Entnahme' : m.action === 'einlagerung' ? 'Einlagerung' : 'Defekt'
-      return `- ${action}: ${m.quantity}x ${device} von ${user} (${new Date(m.created_at as string).toLocaleDateString('de-DE')})`
-    })
-    .join('\n')
+  const deviceLines = (devices ?? []).map((d: Record<string, unknown>) => {
+    const model = d.model as ModelShape
+    const modelName = model?.modellname ?? 'Unbekanntes Modell'
+    const manufacturer = model?.manufacturer?.name ?? '—'
+    const category = model?.category?.name ?? '—'
+    const location = (d.location as string) ? ` @ ${d.location}` : ''
+    return `- [${d.serial_number ?? '?'}] ${manufacturer} ${modelName} (${category}) — ${d.status}${location}`
+  })
 
-  // Call OpenAI with inventory context
+  const deviceCount = deviceLines.length
+  const inventoryText = deviceCount > 0 ? deviceLines.join('\n') : '(keine Geräte im Bestand)'
+
+  const systemPrompt = `Du bist der Lager-Assistent einer Warenwirtschaft für Kassen-/POS-Hardware.
+
+Regeln:
+- Antworte knapp, sachlich, auf Deutsch. Keine Floskeln, keine Wiederholung der Frage.
+- Nutze ausschließlich die unten gelisteten Geräte. Erfinde keine Seriennummern, Hersteller oder Modelle.
+- Bei Zählfragen: nenne die Zahl zuerst, danach 1–3 Beispiele.
+- Wenn nichts passt: "Keine passenden Geräte im aktuellen Bestand."
+- Kategorien sind fest vorgegeben (Kassen, Drucker, Kartenterminals, Handscanner, Kundendisplays, usw.). Bei Fragen nach einer Kategorie exakt filtern.
+
+Ausgabe: ausschließlich JSON { "reply": "..." }.
+
+Geräte (Status ≠ ausgemustert, ${deviceCount} insgesamt, Format: [Seriennummer] Hersteller Modell (Kategorie) — Status @ Ort):
+${inventoryText}`
+
   const openai = new OpenAI({ apiKey: openaiKey })
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [
-      {
-        role: 'system',
-        content: `Du bist ein freundlicher Lager-Assistent für ein Warenwirtschaftssystem. Beantworte Fragen zum Inventar auf Deutsch. Antworte immer als JSON: { "reply": "deine antwort" }
-
-Aktueller Inventarstand:
-${inventoryText}
-
-Letzte Bewegungen:
-${movementsText}`,
-      },
-      {
-        role: 'user',
-        content: body.message,
-      },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: body.message },
     ],
     max_tokens: 500,
     response_format: { type: 'json_object' },

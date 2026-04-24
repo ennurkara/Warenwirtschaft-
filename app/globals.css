@@ -116,9 +116,33 @@
     line-height: 1.45;
     letter-spacing: -0.003em;
   }
+
+  /* iOS Safari reserviert für die native datetime-local UI mehr Platz als der
+     Container bietet — der Wert ragt rechts aus dem Input. `appearance: none`
+     + left-aligned value respektiert die Container-Breite. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 36px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
 }
 
 /* ─────────── Kassen Buch utility layer ─────────── */
+/* Wrapped in @layer components so Tailwind utilities (z.B. `hidden md:flex`,
+   `items-start`, `flex-col`) the cascade gewinnen. Ohne Layer würden
+   nackten Class-Regeln nach `@tailwind utilities` kommen und Mobile-Overrides
+   ignoriert. */
+
+@layer components {
 
 .kb-label {
   font-size: 11px;
@@ -177,11 +201,22 @@
 .kb-table td.num, .kb-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .kb-table .row-n { color: var(--ink-4); font-family: var(--font-mono); font-size: 11px; width: 28px; text-align: right; padding-right: 14px; }
 
-/* KPI cell */
+/* KPI cell. Responsive: 1 col mobile, 2 cols tablet, 4 cols desktop. */
 .kb-kpi {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .kb-kpi {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+@media (min-width: 1024px) {
+  .kb-kpi {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .kb-kpi-cell {
   padding: 16px 18px;
@@ -193,12 +228,15 @@
 .kb-kpi-cell .k-label { font-size: 12px; color: var(--ink-3); font-weight: 500; letter-spacing: -0.005em; }
 .kb-kpi-cell .k-val {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.022em;
   margin-top: 6px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+  .kb-kpi-cell .k-val { font-size: 28px; }
 }
 .kb-kpi-cell .k-val .unit { font-family: var(--font-sans); font-size: 14px; color: var(--ink-3); font-weight: 500; margin-left: 3px; }
 .kb-kpi-cell .k-delta { font-size: 12px; margin-top: 4px; color: var(--ink-3); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
@@ -256,12 +294,15 @@
 }
 .kb-h1 {
   font-family: var(--font-display);
-  font-size: 28px;
-  line-height: 1.1;
+  font-size: 22px;
+  line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.022em;
   color: var(--ink);
   margin: 0;
+}
+@media (min-width: 640px) {
+  .kb-h1 { font-size: 28px; line-height: 1.1; }
 }
 
 /* avatar */
@@ -334,3 +375,6 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
+
+}
+

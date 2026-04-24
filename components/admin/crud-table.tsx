@@ -48,17 +48,19 @@ export function CrudTable({ tableName, title, fields }: Props) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      <div className="border rounded p-4 grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50">
+      <h1 className="text-2xl sm:text-[28px] font-semibold tracking-[-0.022em] text-[var(--ink)] leading-tight">{title}</h1>
+      <div className="border border-[var(--rule)] rounded-kb p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[var(--paper-2)]">
         {fields.map(f => (
-          <div key={f.key} className="space-y-1">
+          <div key={f.key} className="space-y-1 min-w-0">
             <Label>{f.label}</Label>
             <Input type={f.type ?? 'text'} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
           </div>
         ))}
-        <div className="flex items-end"><Button onClick={add}>Anlegen</Button></div>
+        <div className="flex items-end sm:col-span-2 lg:col-span-1">
+          <Button onClick={add} className="w-full sm:w-auto">Anlegen</Button>
+        </div>
       </div>
-      <div className="rounded-md border bg-white">
+      <div className="rounded-kb border border-[var(--rule)] bg-white overflow-x-auto kb-scroll">
         <Table>
           <TableHeader>
             <TableRow>

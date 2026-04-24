@@ -63,6 +63,8 @@ export interface Supplier {
   email: string | null
   phone: string | null
   address: string | null
+  postal_code: string | null
+  city: string | null
   notes: string | null
   created_at: string
 }
@@ -73,6 +75,8 @@ export interface Customer {
   email: string | null
   phone: string | null
   address: string | null
+  postal_code: string | null
+  city: string | null
   notes: string | null
   created_at: string
 }

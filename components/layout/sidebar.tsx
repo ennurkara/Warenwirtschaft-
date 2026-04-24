@@ -62,7 +62,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
   const isAdmin = profile.role === 'admin'
 
   return (
-    <aside className="hidden md:flex w-[232px] flex-col flex-shrink-0 bg-white border-r border-[var(--rule)] h-screen sticky top-0">
+    <aside className="hidden md:flex w-[232px] flex-col flex-shrink-0 bg-white border-r border-[var(--rule)] h-screen sticky top-0 overflow-y-auto kb-scroll">
       <div className="px-5 pt-5 pb-4">
         <Logo height={22} />
         <div className="mt-2 text-[11px] font-medium text-[var(--ink-3)] tracking-[-0.003em]">

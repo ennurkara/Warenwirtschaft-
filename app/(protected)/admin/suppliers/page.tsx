@@ -5,6 +5,8 @@ export default function Page() {
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'E-Mail', type: 'email' },
     { key: 'phone', label: 'Telefon' },
-    { key: 'address', label: 'Adresse' },
+    { key: 'address', label: 'Straße + Nr.' },
+    { key: 'postal_code', label: 'PLZ' },
+    { key: 'city', label: 'Ort' },
   ]} />
 }

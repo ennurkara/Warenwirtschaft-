@@ -89,6 +89,11 @@ export default async function BerichtDetailPage({ params }: PageProps) {
           <p className="text-xs text-[var(--ink-4)] uppercase tracking-wide mb-1">Kunde</p>
           <p className="font-medium">{customer?.name ?? '—'}</p>
           {customer?.address && <p className="text-sm text-[var(--ink-3)]">{customer.address}</p>}
+          {(customer?.postal_code || customer?.city) && (
+            <p className="text-sm text-[var(--ink-3)]">
+              {[customer.postal_code, customer.city].filter(Boolean).join(' ')}
+            </p>
+          )}
           {customer?.phone && <p className="text-sm text-[var(--ink-3)]">{customer.phone}</p>}
           {customer?.email && <p className="text-sm text-[var(--ink-3)]">{customer.email}</p>}
         </div>

@@ -63,6 +63,18 @@ CREATE INDEX IF NOT EXISTS work_reports_customer_idx   ON work_reports(customer_
 CREATE INDEX IF NOT EXISTS work_reports_technician_idx ON work_reports(technician_id);
 CREATE INDEX IF NOT EXISTS work_reports_status_idx     ON work_reports(status);
 
+-- FK auf customers idempotent absichern. CREATE TABLE IF NOT EXISTS oben
+-- erzeugt den FK nicht erneut, falls die Tabelle bereits ohne ihn existiert
+-- (siehe deploy 2026-04-24 — alte 003_work_reports.sql hatte ihn wohl verloren).
+DO $$ BEGIN
+  ALTER TABLE work_reports
+    ADD CONSTRAINT work_reports_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN invalid_foreign_key THEN NULL;
+END $$;
+
 DROP TRIGGER IF EXISTS work_reports_updated_at ON work_reports;
 CREATE TRIGGER work_reports_updated_at
   BEFORE UPDATE ON work_reports

@@ -5,13 +5,14 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Package, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, ShieldCheck } from 'lucide-react'
 import { Logo } from './logo'
 import type { Profile } from '@/lib/types'
 
 const tabs = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/inventory', label: 'Inventar',  icon: Package },
+  { href: '/dashboard',       label: 'Dashboard',      icon: LayoutDashboard },
+  { href: '/inventory',       label: 'Inventar',       icon: Package },
+  { href: '/arbeitsberichte', label: 'Berichte',       icon: ClipboardList },
 ]
 
 export function MobileNav({ profile }: { profile: Profile }) {
@@ -37,7 +38,7 @@ export function MobileNav({ profile }: { profile: Profile }) {
 
       {/* Bottom tab bar */}
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white border-t border-[var(--rule)]">
-        <div className={cn('grid h-16', isAdmin ? 'grid-cols-3' : 'grid-cols-2')}>
+        <div className={cn('grid h-16', isAdmin ? 'grid-cols-4' : 'grid-cols-3')}>
           {tabs.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (

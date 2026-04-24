@@ -17,6 +17,7 @@ import {
   Factory,
   Tag,
   ScanLine,
+  ClipboardList,
   LogOut,
 } from 'lucide-react'
 
@@ -24,6 +25,7 @@ const mainLinks = [
   { href: '/dashboard',              label: 'Dashboard',            icon: LayoutDashboard, kb: '1' },
   { href: '/inventory',              label: 'Inventar',             icon: Package,         kb: '2' },
   { href: '/inventory/delivery/new', label: 'Lieferschein scannen', icon: ScanLine,        kb: '3' },
+  { href: '/arbeitsberichte',        label: 'Arbeitsberichte',      icon: ClipboardList,   kb: '4' },
 ]
 
 const adminLinks = [

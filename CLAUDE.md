@@ -20,6 +20,8 @@ npx jest -t 'deriveDisplayStatus'           # by test name
 node node_modules/typescript/bin/tsc --noEmit   # strict typecheck (no emit)
 ```
 
+Tests live under `__tests__/{api,components,lib}/` mirroring the source tree. Jest is configured via `jest.config.ts` with the `@/*` path alias.
+
 **Windows / Git Bash caveats** (this is the primary dev environment):
 - If `next` is not on PATH, start the dev server with `node node_modules/next/dist/bin/next dev` instead of `npm run dev`.
 - Jest output is sometimes silently suppressed in Git Bash and the exit code is unreliable. When in doubt, verify with `tsc --noEmit` and manual browser testing rather than trusting a silent pass.
@@ -89,4 +91,30 @@ Pages under `app/(protected)/` are async server components that call `createClie
 - **Language:** UI strings, toasts, labels, and SQL comments are in German. Keep new strings consistent.
 - **Migrations are append-only and idempotent.** Every new migration gets the next number. Use `IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, and `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` for enums — a migration may need to be re-run against a partially-applied database.
 - **Plans and specs live in `docs/superpowers/plans/` and `docs/superpowers/specs/`** (the writing-plans / subagent-driven-development skills output). Consult them for in-flight refactors before changing inventory domain code.
-- **Active branch at the time of writing:** `feat/warenwirtschaft-v2`. Merging this branch is code-merge only — there is no deploy pipeline, so "merge" ≠ "go live."
+- **Active branch at the time of writing:** `feat/warenwirtschaft-v2`. Merging this branch is code-merge only — there is no auto-deploy pipeline, so "merge" ≠ "go live." A `netlify.toml` exists with the `@netlify/plugin-nextjs` plugin, but deploys are triggered manually / out-of-band.
+
+## Git workflow
+
+- **Conventional Commits with scope.** Existing history uses `feat(delivery): …`, `fix(inventory): …`, `refactor(dashboard): …`, `fix(db): …` etc. Match the style; subject line under 72 chars, imperative, no trailing period.
+- **Never push directly to `main`.** Work on a feature branch and merge via PR. `main` is the integration branch; the long-lived feature branch is `feat/warenwirtschaft-v2`.
+- **No `--no-verify`, no `--force` on shared branches.** If a hook fails, fix the cause.
+
+### Arbeitsberichte (sister-app `arbeitsbericht`)
+
+Die App `arbeitsbericht` (`https://arbeitsbericht.kassen-buch.cloud`, Repo `../arbeitsbericht/`) teilt diese Supabase-Instanz. Techniker erstellen dort Berichte und wählen Kunde + Geräte aus diesem System. Relevante DB-Objekte stehen hier in:
+- `015_work_reports.sql` — `work_reports`, `work_report_devices`, report-number-Trigger `AB-YYYY-NNNN`
+- `016_work_reports_rls.sql` — RLS (techniker sieht eigene, admin + viewer alle; insert/update nur durch techniker selbst oder admin)
+- `017_work_report_pdfs.sql` — Storage bucket `work-report-pdfs` (private) + `work_reports.pdf_path` / `pdf_uploaded_at`
+
+Routen in diesem Repo: `app/(protected)/arbeitsberichte/page.tsx` (Liste), `.../[id]/page.tsx` (Detail **read-only** + PDF-Download via `supabase.storage.createSignedUrl`). Link in `components/layout/sidebar.tsx` + `mobile-nav.tsx`. **Keine Edit-/Neu-Funktionen hier** — Erstellung läuft exklusiv in der Arbeitsbericht-App; Korrekturen = neuer Bericht.
+
+Buchungs-Mechanik aus der Sister-App: beim Finish setzt der Wizard `devices.status='im_einsatz'` (Batch) und schreibt `work_report_devices`-Zeilen. Kein `device_movements`, kein separater Beleg-Typ.
+
+## No-Gos (häufige Fallen)
+
+- **`devices.name` and `devices.category_id` do NOT exist.** Name and category come from the joined `model` → `manufacturer` / `model` → `category`. Never add a select on these columns; extend `DEVICE_SELECT` in `lib/inventory/queries.ts` instead.
+- **`SUPABASE_SERVICE_ROLE_KEY` is server-only.** It must never appear in a client component, a `NEXT_PUBLIC_*` var, or any file imported from the browser bundle. Today only `app/api/chat/route.ts` uses it.
+- **Do not run `supabase db push`, `supabase db reset`, or any local CLI migration flow.** Migrations are applied manually via the Supabase SQL Editor against the cloud project. New migrations get the next sequential number and must be idempotent (see Conventions).
+- **Do not bypass RLS in the UI.** Role checks in components are defense-in-depth, not the primary gate — the RLS policy is. Both layers must agree: if you gate a button on `role === 'admin'`, make sure the corresponding RLS policy also blocks non-admins.
+- **Do not render `false` / `'Light'` / other typed defaults for Vectron columns on non-Vectron devices.** Render `'—'` when `vectron_details` is null. See `components/inventory/device-list.tsx`.
+- **Do not reset both the form state AND the DB in the same code path without transactional guarantees.** Multi-row writes (e.g. delivery-receipt save) must stay atomic — see the delivery flow for the reference pattern.

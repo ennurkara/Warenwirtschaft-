@@ -1,0 +1,27 @@
+services:
+  warenwirtschaft:
+    image: ghcr.io/ennurkara/warenwirtschaft:latest
+    pull_policy: always
+    container_name: warenwirtschaft
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    networks:
+      - n8n_web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n_web
+      - traefik.http.routers.warenwirtschaft.rule=Host(`warenwirtschaft.kassen-buch.cloud`)
+      - traefik.http.routers.warenwirtschaft.entrypoints=websecure
+      - traefik.http.routers.warenwirtschaft.tls=true
+      - traefik.http.routers.warenwirtschaft.tls.certresolver=letsencrypt
+      - traefik.http.services.warenwirtschaft.loadbalancer.server.port=3000
+      - traefik.http.routers.warenwirtschaft-http.rule=Host(`warenwirtschaft.kassen-buch.cloud`)
+      - traefik.http.routers.warenwirtschaft-http.entrypoints=web
+      - traefik.http.routers.warenwirtschaft-http.middlewares=warenwirtschaft-redirect
+      - traefik.http.middlewares.warenwirtschaft-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.warenwirtschaft-redirect.redirectscheme.permanent=true
+
+networks:
+  n8n_web:
+    external: true

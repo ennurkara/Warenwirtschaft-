@@ -51,15 +51,15 @@ export default async function BerichtDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 flex-wrap">
         <Link
           href="/arbeitsberichte"
           className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[var(--ink-3)] hover:bg-[var(--paper-2)] hover:text-[var(--ink)]"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--ink)]">
+        <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-[var(--ink)]">
           {report.report_number ?? 'Entwurf'}
         </h1>
         <span
@@ -83,6 +83,24 @@ export default async function BerichtDetailPage({ params }: PageProps) {
           </a>
         )}
       </div>
+
+      {/* PDF-Status-Hinweis, wenn abgeschlossener Bericht ohne PDF */}
+      {report.status === 'abgeschlossen' && !report.pdf_path && (
+        <div className="mb-5 rounded-kb border border-[var(--rule)] bg-[var(--amber-tint)] px-4 py-3 text-[13px] text-[var(--amber)]">
+          <div className="font-semibold mb-0.5">Kein PDF hinterlegt</div>
+          <p className="text-[12.5px] leading-snug">
+            Der Bericht wurde abgeschlossen, aber die Arbeitsbericht-App hat das PDF nicht hochgeladen (z. B. weil der Browser offline war). Öffne den Bericht dort erneut, damit das PDF nachgereicht wird.
+          </p>
+          <a
+            href="https://arbeitsbericht.kassen-buch.cloud/arbeitsberichte"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--amber)] hover:underline"
+          >
+            Arbeitsbericht-App öffnen →
+          </a>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-[var(--rule)] divide-y divide-[var(--rule)]">
         <div className="p-5">

@@ -31,6 +31,11 @@ export function DeliveryItemRow({ row, categories, models, onChange, onRemove, o
 
   const canCreateModel = !!row.manufacturer_id && !!row.category_id
 
+  // Vectron-Geräte brauchen zusätzlich zur Hardware-SN eine Software-SN.
+  // Erkennen über den verknüpften Hersteller des aktuell gewählten Modells.
+  const selectedModel = models.find(m => m.id === row.model_id)
+  const isVectron = selectedModel?.manufacturer?.name === 'Vectron'
+
   function patch(p: Partial<LieferscheinRowDraft>) {
     onChange(row.client_id, p)
   }
@@ -105,11 +110,19 @@ export function DeliveryItemRow({ row, categories, models, onChange, onRemove, o
         </td>
         <td className="p-2 align-top min-w-[140px]">
           <Input
-            placeholder="Seriennummer"
+            placeholder={isVectron ? 'HW-SN' : 'Seriennummer'}
             className="font-mono"
             value={row.serial_number ?? ''}
             onChange={e => patch({ serial_number: e.target.value || null })}
           />
+          {isVectron && (
+            <Input
+              placeholder="SW-SN"
+              className="font-mono mt-1"
+              value={row.sw_serial ?? ''}
+              onChange={e => patch({ sw_serial: e.target.value || null })}
+            />
+          )}
         </td>
         <td className="p-2 align-top min-w-[120px]">
           <Input

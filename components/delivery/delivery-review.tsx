@@ -43,6 +43,7 @@ function expandOcrToRows(ocr: LieferscheinOcrResponse, models: Model[]): Liefers
         model_id: match?.id ?? null,
         category_id: match?.category_id ?? null,
         serial_number: i === 0 ? item.serial_number : null,
+        sw_serial: i === 0 ? item.sw_serial ?? null : null,
         location: null,
         notes: null,
         ek_preis: item.ek_preis,
@@ -73,7 +74,7 @@ export function DeliveryReview({ ocr, categories, models, previewUrl, onModelsRe
     setRows(prev => [...prev, {
       client_id: `r${Date.now()}`,
       manufacturer_id: null, model_id: null, category_id: null,
-      serial_number: null, location: null, notes: null, ek_preis: null,
+      serial_number: null, sw_serial: null, location: null, notes: null, ek_preis: null,
       ocr_manufacturer: null, ocr_name: null,
     }])
   }
@@ -98,6 +99,7 @@ export function DeliveryReview({ ocr, categories, models, previewUrl, onModelsRe
       items: rows.map(r => ({
         model_id: r.model_id!,
         serial_number: r.serial_number,
+        sw_serial: r.sw_serial,
         location: r.location,
         notes: r.notes,
         ek_preis: r.ek_preis,

@@ -2,8 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -18,35 +16,26 @@ const tabs = [
   { href: '/arbeitsberichte',        label: 'Berichte',  icon: ClipboardList },
 ]
 
-export function MobileNav({ profile }: { profile: Profile }) {
+export function MobileTopBar({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <nav className="md:hidden flex items-center justify-between h-14 px-4 bg-white border-b border-[var(--rule)] shrink-0">
+      <Logo height={20} />
+      <Button variant="ghost" size="sm" onClick={onSignOut}>Abmelden</Button>
+    </nav>
+  )
+}
+
+/** Bottom Nav als regulärer Flex-Child am Ende der Inner-Column.
+ *  KEIN `position: fixed` — auf iOS Safari ist fixed unter URL-bar-Animation
+ *  unzuverlässig. Die Nav ist jetzt Teil des Layout-Flows, das ist kugelsicher. */
+export function MobileBottomNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClient()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
-
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
-
   const isAdmin = profile.role === 'admin'
 
-  // Bottom Nav muss DIREKT an <body> hängen, damit iOS Safari sie nicht mit
-  // einem verschachtelten Containing-Block-Vorfahren verheddert. Render
-  // erst nach mount (SSR hat kein document).
-  const bottomNav = mounted ? createPortal(
+  return (
     <div
-      className="md:hidden bg-white border-t border-[var(--rule)]"
-      style={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
+      className="md:hidden bg-white border-t border-[var(--rule)] shrink-0"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className={cn('grid h-16', isAdmin ? 'grid-cols-5' : 'grid-cols-4')}>
         {tabs.map(({ href, label, icon: Icon }) => {
@@ -84,19 +73,21 @@ export function MobileNav({ profile }: { profile: Profile }) {
           </Link>
         )}
       </div>
-    </div>,
-    document.body,
-  ) : null
-
-  return (
-    <>
-      {/* Top bar — logo + sign out */}
-      <nav className="md:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 bg-white/80 backdrop-blur-md border-b border-[var(--rule)]">
-        <Logo height={20} />
-        <Button variant="ghost" size="sm" onClick={handleSignOut}>Abmelden</Button>
-      </nav>
-
-      {bottomNav}
-    </>
+    </div>
   )
+}
+
+/** Backwards-compat shell — rendert nur die Top-Bar; Bottom-Nav wird vom
+ *  Protected-Layout als separate Komponente direkt eingehängt. */
+export function MobileNav({ profile }: { profile: Profile }) {
+  const router = useRouter()
+  const supabase = createClient()
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+  // Keep the top-bar export point for legacy imports.
+  void profile
+  return <MobileTopBar onSignOut={handleSignOut} />
 }

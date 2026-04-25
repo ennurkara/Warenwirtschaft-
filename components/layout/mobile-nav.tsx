@@ -37,8 +37,18 @@ export function MobileNav({ profile }: { profile: Profile }) {
         <Button variant="ghost" size="sm" onClick={handleSignOut}>Abmelden</Button>
       </nav>
 
-      {/* Bottom tab bar — 4 tabs always, +Admin for admins */}
-      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white border-t border-[var(--rule)]">
+      {/* Bottom tab bar — 4 tabs always, +Admin for admins.
+          - safe-area-inset-bottom: respect iPhone home-indicator
+          - transform: translateZ(0): force a compositor layer so iOS Safari
+            doesn't repaint/jiggle the bar during URL-bar collapse */}
+      <div
+        className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white border-t border-[var(--rule)]"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          transform: 'translateZ(0)',
+          willChange: 'transform',
+        }}
+      >
         <div className={cn('grid h-16', isAdmin ? 'grid-cols-5' : 'grid-cols-4')}>
           {tabs.map(({ href, label, icon: Icon }) => {
             // /inventory darf nicht gegen /inventory/delivery feuern

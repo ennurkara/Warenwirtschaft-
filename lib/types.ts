@@ -4,7 +4,9 @@ export type DeviceStatus =
   | 'lager'
   | 'reserviert'
   | 'verkauft'
-  | 'im_einsatz'
+  | 'im_einsatz'   // Legacy — wird nicht mehr neu vergeben, durch 'verliehen' ersetzt
+  | 'verliehen'
+  | 'in_reparatur'
   | 'defekt'
   | 'ausgemustert'
 

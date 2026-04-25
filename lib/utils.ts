@@ -21,12 +21,14 @@ export function getStatusLabel(s: DeviceStatus): string {
   const map: Record<DeviceStatus, string> = {
     lager: 'Im Lager',
     reserviert: 'Reserviert',
+    verliehen: 'Verliehen',
     verkauft: 'Verkauft',
-    im_einsatz: 'Im Einsatz',
+    im_einsatz: 'Verliehen', // Legacy-Wert, semantisch = verliehen
+    in_reparatur: 'In Reparatur',
     defekt: 'Defekt',
     ausgemustert: 'Ausgemustert',
   }
-  return map[s]
+  return map[s] ?? s
 }
 
 export function formatCurrency(n: number): string {

@@ -26,10 +26,11 @@ const LIEFERSCHEIN_SCHEMA = {
               manufacturer:  { type: ['string', 'null'] },
               name:          { type: ['string', 'null'] },
               serial_number: { type: ['string', 'null'] },
+              sw_serial:     { type: ['string', 'null'] },
               quantity:      { type: 'integer', minimum: 1 },
               ek_preis:      { type: ['number', 'null'] },
             },
-            required: ['manufacturer', 'name', 'serial_number', 'quantity', 'ek_preis'],
+            required: ['manufacturer', 'name', 'serial_number', 'sw_serial', 'quantity', 'ek_preis'],
             additionalProperties: false,
           },
         },
@@ -49,7 +50,8 @@ Felder:
 - items: Liste der Positionen auf dem Lieferschein.
   - manufacturer: Hersteller ohne Rechtsform (z.B. "Epson").
   - name: Modellbezeichnung ohne Hersteller-Präfix (z.B. "TM-T88VI").
-  - serial_number: NUR wenn Seriennummer der Einzelgeräte auf dem Lieferschein gelistet ist. NICHT: Artikel-Nr., EAN, Bestell-Nr., Trackingnummer.
+  - serial_number: Hardware-Seriennummer der Einzelgeräte. NICHT: Artikel-Nr., EAN, Bestell-Nr., Trackingnummer. Bei Vectron-Kassen das Gerät selbst (HW-SN), NICHT die Software-Seriennummer.
+  - sw_serial: Software-/Lizenz-Seriennummer. NUR bei Vectron-Geräten relevant. Auf Vectron-Lieferscheinen meist als "SW-SN", "Lizenz-Nr.", "POSitive-SN" oder direkt unter der HW-SN gelistet. Bei Nicht-Vectron-Geräten: null.
   - quantity: Anzahl gleicher Geräte in der Zeile (Default 1).
   - ek_preis: Netto-Stückpreis in Euro. Wenn nur Gesamtpreis gelistet, teile durch quantity. Wenn kein Preis erkennbar: null.
 

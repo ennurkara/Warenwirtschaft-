@@ -16,7 +16,11 @@ import type { Category, Model } from '@/lib/types'
 
 interface DeviceFormProps {
   categories: Category[]
-  prefill?: { serial_number?: string }
+  prefill?: {
+    serial_number?: string
+    category_id?: string
+    model?: Model
+  }
   isAdmin: boolean
 }
 
@@ -27,15 +31,15 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
 
   const deviceCategories = categories.filter(c => c.kind !== 'stock')
 
-  const [category_id, setCategoryId] = useState('')
+  const [category_id, setCategoryId] = useState(prefill?.category_id ?? '')
   const category = categories.find(c => c.id === category_id)
   const isKassenhardware = category?.kind === 'kassenhardware'
 
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(prefill?.model ?? null)
   const isVectron = selectedModel?.manufacturer?.name === 'Vectron'
 
   const [core, setCore] = useState({
-    model_id: '',
+    model_id: prefill?.model?.id ?? '',
     serial_number: prefill?.serial_number ?? '',
     location: '',
     notes: '',

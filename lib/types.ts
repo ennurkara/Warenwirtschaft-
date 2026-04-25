@@ -212,6 +212,8 @@ export interface LieferscheinOcrItem {
   manufacturer: string | null
   name: string | null
   serial_number: string | null
+  /** Vectron-only: Software-/Lizenz-Seriennummer. Bei Nicht-Vectron null. */
+  sw_serial: string | null
   quantity: number
   ek_preis: number | null
 }
@@ -230,6 +232,8 @@ export interface LieferscheinRowDraft {
   model_id: string | null
   category_id: string | null      // derived from model when possible
   serial_number: string | null
+  /** Vectron-only: Software-Seriennummer. Bei Nicht-Vectron-Zeilen null. */
+  sw_serial: string | null
   location: string | null
   notes: string | null
   ek_preis: number | null
@@ -246,6 +250,9 @@ export interface LieferscheinRpcPayload {
   items: Array<{
     model_id: string
     serial_number: string | null
+    /** Vectron-only — RPC schreibt vectron_details mit dieser SW-SN, wenn das
+     *  Modell zu Vectron-Hersteller gehört. Bei Nicht-Vectron ignoriert. */
+    sw_serial: string | null
     location: string | null
     notes: string | null
     ek_preis: number | null

@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Download } from 'lucide-react'
+import { ArrowLeft, Download, Check } from 'lucide-react'
 import { formatDateTime, deviceDisplayName, formatHoursMinutes } from '@/lib/utils'
+import { SendEmailButton } from '@/components/arbeitsberichte/send-email-button'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -73,16 +74,31 @@ export default async function BerichtDetailPage({ params }: PageProps) {
         </span>
 
         {pdfUrl && (
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-          >
-            <Download className="h-3.5 w-3.5" /> PDF herunterladen
-          </a>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {report.pdf_path && customer?.email && (
+              <SendEmailButton
+                reportId={report.id}
+                alreadySent={!!report.pdf_emailed_at}
+              />
+            )}
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+            >
+              <Download className="h-3.5 w-3.5" /> PDF herunterladen
+            </a>
+          </div>
         )}
       </div>
+
+      {report.pdf_emailed_at && (
+        <div className="mb-4 inline-flex items-center gap-1.5 text-[12.5px] text-[var(--ink-3)]">
+          <Check className="h-3.5 w-3.5 text-[var(--green)]" />
+          PDF an Kunde gesendet am {formatDateTime(report.pdf_emailed_at)}
+        </div>
+      )}
 
       {/* PDF-Status-Hinweis, wenn abgeschlossener Bericht ohne PDF */}
       {report.status === 'abgeschlossen' && !report.pdf_path && (

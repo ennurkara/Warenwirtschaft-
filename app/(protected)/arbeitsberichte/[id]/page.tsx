@@ -130,6 +130,14 @@ export default async function BerichtDetailPage({ params }: PageProps) {
               Anfahrt: {report.travel_from} → {report.travel_to}
             </p>
           )}
+          {report.travel_distance_km != null && (
+            <p className="text-sm text-[var(--ink-3)]">
+              Distanz: {new Intl.NumberFormat('de-DE', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }).format(report.travel_distance_km)} km
+            </p>
+          )}
         </div>
 
         {report.description && (

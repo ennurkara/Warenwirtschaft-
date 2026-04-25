@@ -53,8 +53,14 @@ export function SellDialog({ deviceId }: SellDialogProps) {
     })
     if (siErr) { toast.error('Position fehlgeschlagen', { description: siErr.message }); setLoading(false); return }
 
-    const { error: dErr } = await supabase.from('devices').update({ status: 'verkauft' }).eq('id', deviceId)
-    if (dErr) { toast.error('Status-Update fehlgeschlagen', { description: dErr.message }); setLoading(false); return }
+    // Lifecycle-RPC: setzt Status='verkauft' + current_customer_id und
+    // schreibt eine device_assignments-Zeile (kind='verkauf').
+    const { error: assignErr } = await supabase.rpc('assign_device', {
+      p_device_id: deviceId,
+      p_customer_id: form.customer_id,
+      p_kind: 'verkauf',
+    })
+    if (assignErr) { toast.error('Status-Update fehlgeschlagen', { description: assignErr.message }); setLoading(false); return }
 
     toast.success('Gerät verkauft')
     setOpen(false)

@@ -103,6 +103,8 @@ export interface Device {
   notes: string | null
   created_at: string
   updated_at: string
+  /** FK auf customers — wer hat das Gerät grade (verliehen oder verkauft). */
+  current_customer_id: string | null
   model?: Model
   vectron_details?: VectronDetails | null
   purchase_item?: PurchaseItem | null

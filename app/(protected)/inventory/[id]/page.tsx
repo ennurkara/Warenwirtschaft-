@@ -4,10 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchDevice } from '@/lib/inventory/queries'
 import { SellDialog } from '@/components/inventory/sell-dialog'
 import { AddPurchaseForm } from '@/components/inventory/add-purchase-form'
+import { LifecycleActions } from '@/components/inventory/lifecycle-actions'
+import { AssignmentHistory } from '@/components/inventory/assignment-history'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
-import { ArrowLeft, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, User } from 'lucide-react'
 
 interface DetailFieldProps {
   label: string
@@ -39,6 +41,28 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
 
   const displayStatus = deriveDisplayStatus(device)
 
+  // Lifecycle: aktueller Kunde + komplette Zuordnungs-Historie
+  const [currentCustomerRes, historyRes] = await Promise.all([
+    device.current_customer_id
+      ? supabase
+          .from('customers')
+          .select('id, name')
+          .eq('id', device.current_customer_id)
+          .single()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from('device_assignments')
+      .select(`
+        id, kind, started_at, ended_at, notes,
+        customer:customers(name),
+        work_report:work_reports(report_number)
+      `)
+      .eq('device_id', params.id)
+      .order('started_at', { ascending: false }),
+  ])
+  const currentCustomer = currentCustomerRes.data as { id: string; name: string | null } | null
+  const historyRows = (historyRes.data ?? []) as unknown as Parameters<typeof AssignmentHistory>[0]['rows']
+
   const modelName = device.model?.modellname ?? '—'
   const categoryName = device.model?.category?.name ?? '—'
   const manufacturerName = device.model?.manufacturer?.name ?? '—'
@@ -67,7 +91,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
               {serialDisplay}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={displayStatus} />
             {!device.sale_item && !isIncomplete && (device.status === 'lager' || device.status === 'reserviert') && (
               <SellDialog deviceId={device.id} />
@@ -75,6 +99,27 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           </div>
         </div>
       </div>
+
+      {currentCustomer && (
+        <div className="rounded-kb border border-[var(--rule)] bg-[var(--blue-tint)]/40 px-[18px] py-3 text-[13px] flex items-center gap-2.5">
+          <User className="h-4 w-4 text-[var(--blue)]" />
+          <span className="text-[var(--ink-2)]">
+            Aktuell {device.status === 'verkauft' ? 'verkauft an' : 'beim Kunden'}:
+          </span>
+          <span className="font-medium text-[var(--ink)]">{currentCustomer.name ?? '—'}</span>
+        </div>
+      )}
+
+      {(isAdmin || profile?.role === 'mitarbeiter') && (
+        <div className="rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+          <div className="kb-sec-head">
+            <h3>Aktionen</h3>
+          </div>
+          <div className="px-[18px] py-3">
+            <LifecycleActions deviceId={device.id} status={device.status} />
+          </div>
+        </div>
+      )}
 
       {isIncomplete && !isAdmin && (
         <div className="rounded-kb border-l-[3px] border-[var(--amber)] bg-[var(--amber-tint)]/70 px-[18px] py-3 text-[13px] text-[#8a5a17] flex items-start gap-2.5">
@@ -124,6 +169,8 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
       )}
 
       {isIncomplete && isAdmin && <AddPurchaseForm deviceId={device.id} />}
+
+      <AssignmentHistory rows={historyRows} />
     </div>
   )
 }

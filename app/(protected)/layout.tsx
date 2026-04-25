@@ -21,12 +21,18 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   if (!profile) redirect('/login')
 
   return (
-    <div className="min-h-screen bg-[var(--paper-2)] md:flex">
+    <div
+      className="bg-[var(--paper-2)] md:flex"
+      style={{ minHeight: '100dvh' }}
+    >
       <Sidebar profile={profile as Profile} />
       <div className="flex flex-col flex-1 min-w-0">
         <MobileNav profile={profile as Profile} />
         <TopBar />
-        <main className="flex-1 overflow-x-hidden px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-10 kb-scroll">
+        <main
+          className="flex-1 overflow-x-hidden px-4 sm:px-6 lg:px-8 py-6 md:pb-10 kb-scroll"
+          style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}
+        >
           {children}
         </main>
       </div>

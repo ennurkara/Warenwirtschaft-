@@ -49,7 +49,42 @@ export function IncompleteDevices({ rows, isAdmin }: { rows: Row[]; isAdmin: boo
           </span>
         )}
       </div>
-      <table className="kb-table">
+
+      {/* Mobile: gestapelte Karten — Pflegen-Button bleibt im Viewport */}
+      <div className="md:hidden divide-y divide-[var(--rule-soft)]">
+        {rows.map(r => (
+          <div key={r.device_id} className="px-4 py-3 flex flex-col gap-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] font-medium text-[var(--ink)] truncate">
+                  {r.manufacturer_name ?? '—'} {r.modellname ?? '—'}
+                </div>
+                <div className="text-[12px] text-[var(--ink-3)] truncate">
+                  {r.category_name ?? '—'}
+                  {r.serial_number && (
+                    <>
+                      {' · '}
+                      <span className="kb-mono text-[11.5px]">SN {r.serial_number}</span>
+                    </>
+                  )}
+                </div>
+                <div className="text-[11.5px] text-[var(--ink-4)] mt-0.5">
+                  Angelegt {formatDe(r.created_at)}
+                </div>
+              </div>
+              <Badge variant="reserv" withDot className="shrink-0">{ageLabel(r.created_at)}</Badge>
+            </div>
+            {isAdmin && (
+              <Button asChild size="sm" variant="primary" className="self-end">
+                <Link href={`/inventory/${r.device_id}`}>Pflegen</Link>
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: volle Tabelle */}
+      <table className="kb-table hidden md:table">
         <thead>
           <tr>
             <th style={{ width: 28 }}>#</th>

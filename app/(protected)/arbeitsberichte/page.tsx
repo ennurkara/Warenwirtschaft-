@@ -18,6 +18,9 @@ export default async function ArbeitsberichtePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Stale Drafts (>15 Min) opportunistisch löschen, bevor wir die Liste laden.
+  await supabase.rpc('cleanup_old_work_report_drafts')
+
   const { data: reports } = await supabase
     .from('work_reports')
     .select(`

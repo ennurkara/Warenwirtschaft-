@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Package, ClipboardList, ShieldCheck, ScanLine } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, MessageCircle, ScanLine } from 'lucide-react'
 import { Logo } from './logo'
 import type { Profile } from '@/lib/types'
 
@@ -14,6 +14,7 @@ const tabs = [
   { href: '/inventory',              label: 'Inventar',  icon: Package },
   { href: '/inventory/delivery/new', label: 'Scan',      icon: ScanLine },
   { href: '/arbeitsberichte',        label: 'Berichte',  icon: ClipboardList },
+  { href: '/chat',                   label: 'Chat',      icon: MessageCircle },
 ]
 
 export function MobileTopBar({ onSignOut }: { onSignOut: () => void }) {
@@ -30,14 +31,17 @@ export function MobileTopBar({ onSignOut }: { onSignOut: () => void }) {
  *  unzuverlässig. Die Nav ist jetzt Teil des Layout-Flows, das ist kugelsicher. */
 export function MobileBottomNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
-  const isAdmin = profile.role === 'admin'
+  // profile aktuell nicht für Tab-Logik gebraucht — alle 5 Tabs sind für jeden
+  // User sichtbar (Chat ersetzt das frühere Admin-Schloss). Admin-Funktionen
+  // erreicht man weiter über Sidebar (Desktop) bzw. direkten Link.
+  void profile
 
   return (
     <div
       className="md:hidden bg-white border-t border-[var(--rule)] shrink-0"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className={cn('grid h-16', isAdmin ? 'grid-cols-5' : 'grid-cols-4')}>
+      <div className="grid h-16 grid-cols-5">
         {tabs.map(({ href, label, icon: Icon }) => {
           const isScan = href === '/inventory/delivery/new'
           const isInventory = href === '/inventory'
@@ -60,18 +64,6 @@ export function MobileBottomNav({ profile }: { profile: Profile }) {
             </Link>
           )
         })}
-        {isAdmin && (
-          <Link
-            href="/admin/users"
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 text-[10.5px] font-medium transition-colors',
-              pathname.startsWith('/admin') ? 'text-[var(--blue)]' : 'text-[var(--ink-4)]'
-            )}
-          >
-            <ShieldCheck className="h-5 w-5" />
-            Admin
-          </Link>
-        )}
       </div>
     </div>
   )

@@ -19,24 +19,45 @@ function normalize(s: string | null | undefined) {
 }
 
 /** Sucht in der geladenen Modell-Liste das beste Match auf einen OCR-Treffer.
- *  Vergleicht Hersteller fuzzy (case-insensitive, includes-both-ways) und
- *  Modellnamen normalisiert. Liefert nur einen Treffer, wenn er eindeutig ist. */
+ *
+ *  Zwei Pässe:
+ *  1. Exakter Name-Match (modellname == ocr.name oder mit variante kombiniert).
+ *     Wenn genau ein Treffer existiert → den nehmen, fertig.
+ *  2. Fuzzy-Substring nur als Fallback. Wenn der OCR-Name "Pos Touch 15 II"
+ *     auch "Pos Touch 15" enthält, würde Pass-1-only fairerweise beide treffen
+ *     und nichts auswählen — Pass 1 verhindert das, weil der exakte Match
+ *     "Pos Touch 15 II" gewinnt. */
 function resolveModel(ocr: OcrResult, models: Model[]): Model | null {
   const ocrMfr = normalize(ocr.manufacturer)
   const ocrName = normalize(ocr.name)
   if (!ocrName) return null
 
-  const candidates = models.filter(m => {
+  function manufacturerMatches(m: Model) {
     const mfr = normalize(m.manufacturer?.name)
+    if (!ocrMfr) return true
+    return mfr === ocrMfr || mfr.includes(ocrMfr) || ocrMfr.includes(mfr)
+  }
+
+  // Pass 1: exact name match
+  const exact = models.filter(m => {
+    if (!manufacturerMatches(m)) return false
     const name = normalize(m.modellname)
     const variante = normalize(m.variante)
     const fullName = variante ? `${name} ${variante}` : name
-    const mfrOk = !ocrMfr || mfr === ocrMfr || mfr.includes(ocrMfr) || ocrMfr.includes(mfr)
-    const nameOk = name === ocrName || fullName === ocrName ||
-      name.includes(ocrName) || ocrName.includes(name)
-    return mfrOk && nameOk
+    return name === ocrName || fullName === ocrName
   })
-  return candidates.length === 1 ? candidates[0] : null
+  if (exact.length >= 1) return exact[0]
+
+  // Pass 2: fuzzy substring (both directions) — nur eindeutige Treffer
+  const fuzzy = models.filter(m => {
+    if (!manufacturerMatches(m)) return false
+    const name = normalize(m.modellname)
+    const variante = normalize(m.variante)
+    const fullName = variante ? `${name} ${variante}` : name
+    return name.includes(ocrName) || ocrName.includes(name) ||
+      fullName.includes(ocrName) || ocrName.includes(fullName)
+  })
+  return fuzzy.length === 1 ? fuzzy[0] : null
 }
 
 export default function NewDevicePage() {

@@ -38,7 +38,7 @@ export function CustomerDetail({ customer }: { customer: CustomerDetailModel }) 
       <CustomerDevicesCard devices={customer.devices} />
 
       {customer.customer_kind === 'apro' && (
-        <CustomerLicensesCard licenses={customer.licenses} />
+        <CustomerLicensesCard customerId={customer.id} licenses={customer.licenses} />
       )}
 
       <CustomerWorkReportsCard reports={customer.work_reports} />

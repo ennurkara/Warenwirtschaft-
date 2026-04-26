@@ -53,6 +53,9 @@ export interface Model {
   default_ek: number | null
   default_vk: number | null
   default_supplier_id: string | null
+  notes: string | null
+  default_monthly_update_fee_ek: number | null
+  default_monthly_update_fee_vk: number | null
   created_at: string
   manufacturer?: Manufacturer
   category?: Category
@@ -123,14 +126,18 @@ export type LicenseStatus = 'aktiv' | 'gekuendigt' | 'abgelaufen'
 export interface License {
   id: string
   customer_id: string
+  model_id: string | null
   name: string
   license_key: string | null
   purchased_at: string | null  // ISO YYYY-MM-DD
   monthly_update_fee: number | null
+  ek_preis: number | null
+  vk_preis: number | null
   status: LicenseStatus
   notes: string | null
   created_at: string
   updated_at: string
+  model?: Model | null
 }
 
 export type VectronLicenseType = 'full' | 'light'

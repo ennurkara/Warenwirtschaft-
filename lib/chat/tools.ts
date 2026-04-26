@@ -70,10 +70,12 @@ const SCHEMAS: ToolSpec[] = [
   },
   {
     name: 'fetchAproLicenseCatalog',
-    description: 'Apro-Lizenz-Katalog (Modelle): Name, EK einmalig, VK einmalig, monatliche Update-Gebühr EK + VK. Optional searchName als Filter.',
+    description: 'Apro-Lizenz-Katalog inkl. ALLER PREISE (EK einmalig, VK einmalig, monatliche Update-Gebühr EK + VK). Bei jeder Preis-Frage zu einer Apro-Lizenz dieses Tool aufrufen. Suche ist whitespace-tolerant (extra Leerzeichen werden normalisiert), case-insensitive, Substring-Match. Beispiel-Suchen: "Kasse 9", "Kassenbuch", "Handy 10".',
     parameters: {
       type: 'object',
-      properties: { searchName: { type: 'string' } },
+      properties: {
+        searchName: { type: 'string', description: 'Teilstring aus dem Modellnamen, beliebige Reihenfolge der Worte ist OK' },
+      },
     },
   },
   {
@@ -207,7 +209,10 @@ const fetchTseExpiringSoon: Handler = async (supabase, args) => {
 
 const fetchAproLicenseCatalog: Handler = async (supabase, args) => {
   const { searchName } = args as { searchName?: string }
-  let q = supabase
+  // Alle ~53 Apro-Lizenzen laden — klein genug, dann clientseitig filtern.
+  // Server-Filter via ilike scheitert an doppelten Whitespaces in den
+  // Modellnamen (Excel-Import hat manche mit "APRO. Kasse  9" angelegt).
+  const { data, error } = await supabase
     .from('models')
     .select(`
       id, modellname, default_ek, default_vk,
@@ -215,18 +220,25 @@ const fetchAproLicenseCatalog: Handler = async (supabase, args) => {
       manufacturer:manufacturers(name), category:categories(name)
     `)
     .order('modellname')
-    .limit(100)
-  if (searchName) q = q.ilike('modellname', `%${searchName}%`)
-  const { data, error } = await q
+    .limit(200)
   if (error) return { error: error.message }
-  const rows = (data ?? []) as unknown as Array<{
+  type Row = {
     modellname: string
     manufacturer?: { name?: string } | null
     category?: { name?: string } | null
-  }>
-  return rows.filter(
-    r => r.manufacturer?.name === 'Apro' && r.category?.name === 'Apro-Lizenz',
-  )
+  }
+  const all = (data ?? []) as unknown as Row[]
+  const apro = all.filter(r => r.manufacturer?.name === 'Apro' && r.category?.name === 'Apro-Lizenz')
+  if (!searchName) return apro
+  // Tokenize Suche + Modellnamen: lowercase, Whitespace kollabiert, alle Tokens
+  // müssen im Namen vorkommen (Reihenfolge egal). Robuster gegen "Kasse 9" vs.
+  // "APRO. Kasse  9" als ein einfacher ilike.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+  const tokens = normalize(searchName).split(' ').filter(Boolean)
+  return apro.filter(r => {
+    const hay = normalize(r.modellname)
+    return tokens.every(t => hay.includes(t))
+  })
 }
 
 const fetchWorkReportStats: Handler = async (supabase, args) => {

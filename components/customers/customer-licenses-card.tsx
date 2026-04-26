@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { License, LicenseStatus } from '@/lib/types'
 import { AddLicenseDialog } from './add-license-dialog'
+import { DeleteLicenseButton } from './delete-license-button'
 
 const STATUS_VARIANT: Record<LicenseStatus, 'lager' | 'reserv' | 'aus'> = {
   aktiv: 'lager',
@@ -52,7 +53,7 @@ export function CustomerLicensesCard({
       ) : (
         <div className="divide-y divide-[var(--rule-soft)]">
           {licenses.map(l => (
-            <div key={l.id} className="px-[18px] py-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-3 items-center">
+            <div key={l.id} className="px-[18px] py-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center">
               <div className="min-w-0">
                 <div className="text-[13.5px] font-medium text-[var(--ink)] truncate">{l.name}</div>
                 {l.license_key && (
@@ -69,6 +70,7 @@ export function CustomerLicensesCard({
                 {l.monthly_update_fee !== null ? `${formatCurrency(Number(l.monthly_update_fee))}/M` : '—'}
               </div>
               <Badge variant={STATUS_VARIANT[l.status]} withDot>{l.status}</Badge>
+              <DeleteLicenseButton licenseId={l.id} licenseName={l.name} />
             </div>
           ))}
         </div>

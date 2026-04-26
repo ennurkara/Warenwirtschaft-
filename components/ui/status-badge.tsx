@@ -15,7 +15,7 @@ const MAP: Record<DeviceStatus, { label: string; variant: 'lager' | 'reserv' | '
   reserviert:   { label: 'Reserviert',   variant: 'reserv' },
   verliehen:    { label: 'Verliehen',    variant: 'verkauft' },   // blau
   im_einsatz:   { label: 'Verliehen',    variant: 'verkauft' },   // legacy → verliehen
-  verkauft:     { label: 'Verkauft',     variant: 'aus' },        // grau (Endzustand)
+  verkauft:     { label: 'Im Einsatz',   variant: 'verkauft' },   // blau (Kunde nutzt es aktiv)
   in_reparatur: { label: 'In Reparatur', variant: 'reserv' },     // amber (Aufgabe)
   defekt:       { label: 'Defekt',       variant: 'defekt' },     // rot
   ausgemustert: { label: 'Ausgemustert', variant: 'aus' },

@@ -22,7 +22,7 @@ export function getStatusLabel(s: DeviceStatus): string {
     lager: 'Im Lager',
     reserviert: 'Reserviert',
     verliehen: 'Verliehen',
-    verkauft: 'Verkauft',
+    verkauft: 'Im Einsatz', // Kunde hat es gekauft, Gerät ist beim ihm im Einsatz
     im_einsatz: 'Verliehen', // Legacy-Wert, semantisch = verliehen
     in_reparatur: 'In Reparatur',
     defekt: 'Defekt',

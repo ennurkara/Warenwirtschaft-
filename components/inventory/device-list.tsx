@@ -95,7 +95,7 @@ export function DeviceList({
             <SelectItem value="lager">Im Lager</SelectItem>
             <SelectItem value="reserviert">Reserviert</SelectItem>
             <SelectItem value="verliehen">Verliehen</SelectItem>
-            <SelectItem value="verkauft">Verkauft</SelectItem>
+            <SelectItem value="verkauft">Im Einsatz</SelectItem>
             <SelectItem value="in_reparatur">In Reparatur</SelectItem>
             <SelectItem value="defekt">Defekt</SelectItem>
             <SelectItem value="ausgemustert">Ausgemustert</SelectItem>

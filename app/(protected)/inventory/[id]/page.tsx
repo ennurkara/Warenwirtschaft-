@@ -105,7 +105,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           <User className="h-4 w-4 text-[var(--blue)]" />
           <span className="text-[var(--ink-2)]">
             {device.status === 'verkauft'
-              ? 'Verkauft an:'
+              ? 'Im Einsatz bei:'
               : device.status === 'in_reparatur'
                 ? 'Eigentümer (in Reparatur):'
                 : 'Aktuell beim Kunden:'}

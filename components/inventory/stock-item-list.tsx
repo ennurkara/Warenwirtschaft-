@@ -34,7 +34,7 @@ export function StockItemList({ items, categoryName, canAdd }: StockItemListProp
         </div>
         {canAdd && (
           <Button asChild>
-            <Link href={`/inventory/new?kind=stock&category=${encodeURIComponent(categoryName)}`}>
+            <Link href={`/inventory/stock-new?category=${encodeURIComponent(categoryName)}`}>
               <Plus className="h-3.5 w-3.5" />
               Bestand erfassen
             </Link>

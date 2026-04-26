@@ -8,5 +8,9 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
   const customer = await fetchCustomerDetail(supabase, params.id)
   if (!customer) notFound()
 
-  return <CustomerDetail customer={customer} />
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
+  const isAdmin = profile?.role === 'admin'
+
+  return <CustomerDetail customer={customer} isAdmin={isAdmin} />
 }

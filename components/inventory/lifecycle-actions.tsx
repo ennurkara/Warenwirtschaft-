@@ -64,8 +64,7 @@ export function LifecycleActions({ deviceId, status }: Props) {
 
   const buttons: React.ReactNode[] = []
 
-  // Lager / Reserviert: kann verliehen oder verkauft werden (Verkaufen läuft
-  // weiter über den separaten SellDialog).
+  // Lager / Reserviert: kann verliehen oder verkauft werden
   if (status === 'lager' || status === 'reserviert') {
     buttons.push(
       <Button key="verleihen" variant="secondary" onClick={() => setVerleihenOpen(true)} disabled={busy !== null}>
@@ -91,7 +90,25 @@ export function LifecycleActions({ deviceId, status }: Props) {
     )
   }
 
-  // In Reparatur: zurück ins Lager (Reparatur abgeschlossen) oder ausmustern
+  // Verkauft: Service-Reparatur möglich (Eigentum bleibt beim Kunden)
+  if (status === 'verkauft') {
+    buttons.push(
+      <Button
+        key="rep-start-verkauft"
+        variant="secondary"
+        onClick={() => callReturnRpc('in_reparatur', 'Verkauftes Gerät zur Service-Reparatur entgegennehmen?')}
+        disabled={busy !== null}
+      >
+        {busy === 'in_reparatur'
+          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          : <Send className="h-4 w-4 mr-1.5" />}
+        Zur Reparatur
+      </Button>,
+    )
+  }
+
+  // In Reparatur: zurück (verkauft → verkauft, sonst → lager) oder ausmustern.
+  // Der Server erkennt automatisch ob das Gerät einem Kunden gehört.
   if (status === 'in_reparatur') {
     buttons.push(
       <Button

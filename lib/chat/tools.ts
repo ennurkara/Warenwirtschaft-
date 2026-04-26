@@ -230,14 +230,24 @@ const fetchAproLicenseCatalog: Handler = async (supabase, args) => {
   const all = (data ?? []) as unknown as Row[]
   const apro = all.filter(r => r.manufacturer?.name === 'Apro' && r.category?.name === 'Apro-Lizenz')
   if (!searchName) return apro
-  // Tokenize Suche + Modellnamen: lowercase, Whitespace kollabiert, alle Tokens
-  // müssen im Namen vorkommen (Reihenfolge egal). Robuster gegen "Kasse 9" vs.
-  // "APRO. Kasse  9" als ein einfacher ilike.
+  // Drei Match-Strategien — eine reicht, dann Treffer:
+  //   1. Token-Match: lowercase + collapsed whitespace, alle Tokens müssen vorkommen
+  //      → "Kasse 9" findet "APRO. Kasse 9"
+  //   2. Compact-Match: alle Whitespaces + Punkte raus, Substring
+  //      → "kasse10" findet "APRO. Kasse 10"
+  //   3. Fallback: einzelne Tokens als Substring (für "Vectron POS 7" → "POS")
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
-  const tokens = normalize(searchName).split(' ').filter(Boolean)
+  const compact = (s: string) => s.toLowerCase().replace(/[\s.\-_]/g, '')
+  const needle = normalize(searchName)
+  const needleCompact = compact(searchName)
+  const tokens = needle.split(' ').filter(Boolean)
+
   return apro.filter(r => {
     const hay = normalize(r.modellname)
-    return tokens.every(t => hay.includes(t))
+    const hayCompact = compact(r.modellname)
+    if (tokens.every(t => hay.includes(t))) return true
+    if (hayCompact.includes(needleCompact)) return true
+    return false
   })
 }
 

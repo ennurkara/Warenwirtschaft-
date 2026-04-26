@@ -13,9 +13,11 @@ const STATUS_VARIANT: Record<LicenseStatus, 'lager' | 'reserv' | 'aus'> = {
 export function CustomerLicensesCard({
   customerId,
   licenses,
+  isAdmin,
 }: {
   customerId: string
   licenses: License[]
+  isAdmin: boolean
 }) {
   const monthlyTotal = licenses
     .filter(l => l.status === 'aktiv')
@@ -70,7 +72,9 @@ export function CustomerLicensesCard({
                 {l.monthly_update_fee !== null ? `${formatCurrency(Number(l.monthly_update_fee))}/M` : '—'}
               </div>
               <Badge variant={STATUS_VARIANT[l.status]} withDot>{l.status}</Badge>
-              <DeleteLicenseButton licenseId={l.id} licenseName={l.name} />
+              {isAdmin
+                ? <DeleteLicenseButton licenseId={l.id} licenseName={l.name} />
+                : <span className="w-[26px]" aria-hidden />}
             </div>
           ))}
         </div>

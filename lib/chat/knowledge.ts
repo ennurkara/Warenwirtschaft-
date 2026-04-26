@@ -78,6 +78,7 @@ Apro-Kunden kaufen Lizenzen einmalig + zahlen monatliche Software-Pflege.
 - Kunde-Lizenz anlegen: auf der Kundenkartei → "Lizenz hinzufügen" Dialog mit Modell-Picker, der EK/VK + Update-Gebühr aus dem Katalog vorbefüllt.
 - Lizenz-Karte zeigt Summe einmaliger VK + monatliche Update-Gebühr.
 - Löschen: nur admin (Trash-Icon nur für admins sichtbar).
+- **Wichtig für den Assistenten:** Konkrete Preise (EK, VK, monatliche Update-Gebühr) stehen NICHT hier in der Wissensbasis. Bei jeder Preis-Frage zu einer Apro-Lizenz IMMER \`fetchAproLicenseCatalog\` mit \`searchName\` aufrufen. Ein Modellname kann doppelte Leerzeichen enthalten ("APRO. Kasse  9") — das Tool ist whitespace-tolerant, einfach den natürlichen Namen suchen.
 
 ## Bestand (kind=stock)
 Mengenartikel ohne individuelle Seriennummer.

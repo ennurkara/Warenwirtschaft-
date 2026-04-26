@@ -104,7 +104,11 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
         <div className="rounded-kb border border-[var(--rule)] bg-[var(--blue-tint)]/40 px-[18px] py-3 text-[13px] flex items-center gap-2.5">
           <User className="h-4 w-4 text-[var(--blue)]" />
           <span className="text-[var(--ink-2)]">
-            Aktuell {device.status === 'verkauft' ? 'verkauft an' : 'beim Kunden'}:
+            {device.status === 'verkauft'
+              ? 'Verkauft an:'
+              : device.status === 'in_reparatur'
+                ? 'Eigentümer (in Reparatur):'
+                : 'Aktuell beim Kunden:'}
           </span>
           <span className="font-medium text-[var(--ink)]">{currentCustomer.name ?? '—'}</span>
         </div>

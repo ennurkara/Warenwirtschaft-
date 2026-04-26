@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { ModelPicker } from '@/components/inventory/model-picker'
 import { EntityPicker } from '@/components/inventory/entity-picker'
 import { VectronFields, INITIAL_VECTRON, VectronFormState } from '@/components/inventory/vectron-fields'
+import { TseDetailBlock, INITIAL_TSE, TseFormState } from '@/components/inventory/tse-detail-block'
 import type { Category, Model } from '@/lib/types'
 
 interface DeviceFormProps {
@@ -37,6 +38,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
 
   const [selectedModel, setSelectedModel] = useState<Model | null>(prefill?.model ?? null)
   const isVectron = selectedModel?.manufacturer?.name === 'Vectron'
+  const isTseSwissbit = category?.name === 'TSE Swissbit'
 
   const [core, setCore] = useState({
     model_id: prefill?.model?.id ?? '',
@@ -45,6 +47,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
     notes: '',
   })
   const [vectron, setVectron] = useState<VectronFormState>(INITIAL_VECTRON)
+  const [tse, setTse] = useState<TseFormState>(INITIAL_TSE)
 
   const [purchase, setPurchase] = useState({
     supplier_id: '',
@@ -90,6 +93,17 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
       if (vErr) { toast.error('Vectron-Details fehlgeschlagen', { description: vErr.message }); setIsLoading(false); return }
     }
 
+    // 2b. tse_details insert (nur wenn Kategorie "TSE Swissbit")
+    if (isTseSwissbit) {
+      const { error: tErr } = await supabase.from('tse_details').insert({
+        device_id: device.id,
+        kind: tse.kind,
+        bsi_k_tr_number: tse.bsi_k_tr_number || null,
+        expires_at: tse.expires_at || null,
+      })
+      if (tErr) { toast.error('TSE-Details fehlgeschlagen', { description: tErr.message }); setIsLoading(false); return }
+    }
+
     // 3. Einkaufsbeleg nur anlegen wenn Lieferant UND EK gesetzt.
     //    Fehlt eins → Gerät steht ohne Beleg im Lager, Dashboard flaggt es.
     if (hasFullPurchase) {
@@ -132,7 +146,7 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       <div className="space-y-2">
         <Label>Kategorie *</Label>
-        <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })); setPurchase(p => ({ ...p, supplier_id: '', ek_preis: '' })) }}>
+        <Select value={category_id} onValueChange={v => { setCategoryId(v); setSelectedModel(null); setCore(p => ({ ...p, model_id: '' })); setPurchase(p => ({ ...p, supplier_id: '', ek_preis: '' })); setTse(INITIAL_TSE); setVectron(INITIAL_VECTRON) }}>
           <SelectTrigger><SelectValue placeholder="Kategorie wählen..." /></SelectTrigger>
           <SelectContent>
             {deviceCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -164,6 +178,8 @@ export function DeviceForm({ categories, prefill, isAdmin }: DeviceFormProps) {
           </div>
 
           {isKassenhardware && isVectron && <VectronFields value={vectron} onChange={setVectron} />}
+
+          {isTseSwissbit && <TseDetailBlock value={tse} onChange={setTse} />}
 
           <div className="space-y-2">
             <Label>Standort</Label>

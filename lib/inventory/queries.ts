@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import type { Device } from '@/lib/types'
 
-const DEVICE_SELECT = `
+export const DEVICE_SELECT = `
   *,
   model:models(
     *,
@@ -9,6 +9,7 @@ const DEVICE_SELECT = `
     category:categories(*)
   ),
   vectron_details(*),
+  tse_details!tse_details_device_id_fkey(*),
   purchase_item:purchase_items(*, purchase:purchases(*, supplier:suppliers(*))),
   sale_item:sale_items(*, sale:sales(*, customer:customers(*)))
 `

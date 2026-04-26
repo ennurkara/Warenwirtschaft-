@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   Dialog,
@@ -16,7 +17,15 @@ import {
 import { toast } from 'sonner'
 import { Pencil, Trash2 } from 'lucide-react'
 
-interface FieldDef { key: string; label: string; type?: 'text' | 'email' }
+interface SelectOption { value: string; label: string }
+
+interface FieldDef {
+  key: string
+  label: string
+  type?: 'text' | 'email' | 'select'
+  options?: SelectOption[]        // für type='select'
+  defaultValue?: string           // Anfangswert beim Anlegen
+}
 
 interface Props {
   tableName: string
@@ -27,7 +36,7 @@ interface Props {
 type Row = Record<string, string | null>
 
 function emptyForm(fields: FieldDef[]): Record<string, string> {
-  return fields.reduce((acc, f) => ({ ...acc, [f.key]: '' }), {})
+  return fields.reduce((acc, f) => ({ ...acc, [f.key]: f.defaultValue ?? '' }), {})
 }
 
 function formFromRow(fields: FieldDef[], row: Row): Record<string, string> {
@@ -111,11 +120,25 @@ export function CrudTable({ tableName, title, fields }: Props) {
         {fields.map(f => (
           <div key={f.key} className="space-y-1 min-w-0">
             <Label>{f.label}</Label>
-            <Input
-              type={f.type ?? 'text'}
-              value={form[f.key]}
-              onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-            />
+            {f.type === 'select' ? (
+              <Select
+                value={form[f.key] || (f.defaultValue ?? '')}
+                onValueChange={v => setForm(p => ({ ...p, [f.key]: v }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(f.options ?? []).map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                type={f.type ?? 'text'}
+                value={form[f.key]}
+                onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+              />
+            )}
           </div>
         ))}
         <div className="flex items-end sm:col-span-2 lg:col-span-1">
@@ -172,11 +195,25 @@ export function CrudTable({ tableName, title, fields }: Props) {
             {fields.map(f => (
               <div key={f.key} className="space-y-1 min-w-0">
                 <Label>{f.label}</Label>
-                <Input
-                  type={f.type ?? 'text'}
-                  value={editForm[f.key] ?? ''}
-                  onChange={e => setEditForm(p => ({ ...p, [f.key]: e.target.value }))}
-                />
+                {f.type === 'select' ? (
+                  <Select
+                    value={editForm[f.key] || (f.defaultValue ?? '')}
+                    onValueChange={v => setEditForm(p => ({ ...p, [f.key]: v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(f.options ?? []).map(o => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    type={f.type ?? 'text'}
+                    value={editForm[f.key] ?? ''}
+                    onChange={e => setEditForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  />
+                )}
               </div>
             ))}
           </div>

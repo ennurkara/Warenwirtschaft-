@@ -85,7 +85,7 @@ export function ChatWindow({ role }: ChatWindowProps) {
   const starters = STARTERS_BY_ROLE[role] ?? STARTERS_BY_ROLE.mitarbeiter
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
+    <div className="flex flex-col h-full rounded-kb border border-[var(--rule)] bg-white shadow-xs overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, i) => (
           <div key={i} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>

@@ -53,7 +53,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <MobileBottomNav profile={profile as Profile} />
       </div>
       <div className="hidden md:block">
-        <ChatFab />
+        <ChatFab role={(profile.role ?? 'mitarbeiter') as 'admin' | 'mitarbeiter' | 'techniker' | 'viewer'} />
       </div>
     </div>
   )

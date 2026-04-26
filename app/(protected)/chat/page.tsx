@@ -23,7 +23,9 @@ export default async function ChatPage() {
           dem, was du laut Rolle <span className="font-medium">{profile?.role}</span> sehen darfst.
         </p>
       </div>
-      <ChatWindow role={role} />
+      <div className="h-[calc(100vh-14rem)]">
+        <ChatWindow role={role} />
+      </div>
     </div>
   )
 }

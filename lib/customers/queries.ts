@@ -13,7 +13,7 @@ export const CUSTOMER_DETAIL_SELECT = `
   *,
   devices:devices!current_customer_id(${DEVICE_SELECT}),
   contracts(*, ec_device:devices!ec_device_id(${DEVICE_SELECT})),
-  licenses(*),
+  licenses(*, model:models(*, manufacturer:manufacturers(*), category:categories(*))),
   work_reports(id, report_number, customer_id, technician_id, start_time, end_time, status, completed_at, created_at, updated_at, description, work_hours, travel_from, travel_to, technician_signature, customer_signature, pdf_path, pdf_uploaded_at)
 `
 

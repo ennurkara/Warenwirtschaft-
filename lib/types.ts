@@ -71,6 +71,8 @@ export interface Supplier {
   created_at: string
 }
 
+export type CustomerKind = 'vectron' | 'apro' | 'sonstige'
+
 export interface Customer {
   id: string
   name: string
@@ -80,7 +82,55 @@ export interface Customer {
   postal_code: string | null
   city: string | null
   notes: string | null
+  customer_kind: CustomerKind
   created_at: string
+}
+
+// ---------- TSE / Verträge / Lizenzen ----------
+
+export type TseKind = 'usb' | 'sd'
+
+export interface TseDetails {
+  device_id: string
+  kind: TseKind
+  bsi_k_tr_number: string | null
+  expires_at: string | null    // ISO YYYY-MM-DD
+  installed_in_device: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ContractKind = 'myvectron' | 'smart4pay' | 'apro_updates'
+export type ContractStatus = 'aktiv' | 'gekuendigt' | 'beendet'
+
+export interface Contract {
+  id: string
+  customer_id: string
+  kind: ContractKind
+  start_date: string           // ISO YYYY-MM-DD
+  end_date: string | null
+  monthly_fee: number | null
+  status: ContractStatus
+  ec_device_id: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  ec_device?: Device | null
+}
+
+export type LicenseStatus = 'aktiv' | 'gekuendigt' | 'abgelaufen'
+
+export interface License {
+  id: string
+  customer_id: string
+  name: string
+  license_key: string | null
+  purchased_at: string | null  // ISO YYYY-MM-DD
+  monthly_update_fee: number | null
+  status: LicenseStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type VectronLicenseType = 'full' | 'light'
@@ -107,6 +157,7 @@ export interface Device {
   current_customer_id: string | null
   model?: Model
   vectron_details?: VectronDetails | null
+  tse_details?: TseDetails | null
   purchase_item?: PurchaseItem | null
   sale_item?: SaleItem | null
 }

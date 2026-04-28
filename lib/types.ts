@@ -3,9 +3,9 @@ export type UserRole = 'admin' | 'mitarbeiter' | 'viewer'
 export type DeviceStatus =
   | 'lager'
   | 'reserviert'
-  | 'verkauft'
-  | 'im_einsatz'   // Legacy — wird nicht mehr neu vergeben, durch 'verliehen' ersetzt
-  | 'verliehen'
+  | 'verkauft'      // beim Kunden mit Sale-Beleg
+  | 'im_einsatz'    // installiert beim Kunden ohne Sale-Beleg (z.B. Vectron-Import)
+  | 'verliehen'     // temporaere Leihe / Ersatzgeraet
   | 'in_reparatur'
   | 'defekt'
   | 'ausgemustert'

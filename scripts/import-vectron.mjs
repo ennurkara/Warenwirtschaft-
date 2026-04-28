@@ -61,10 +61,19 @@ const stateByCashId = new Map();
 for (const s of states.cashRegisterStates ?? []) stateByCashId.set(s.cashRegisterId, s);
 
 // ---- Aktivitaets-Filter ----------------------------------------------------
+//
+// Aktiv = Operator-Konto ist nicht 'disabled' im MyVectron-Portal.
+// Kassen-Heartbeat dient nur noch als Info (last_heartbeat_at), nicht mehr als Filter
+// — auch Kunden ohne Kassen werden importiert, solange der Vertrag laeuft.
 
-const NINETY_DAYS = 90 * 24 * 3600 * 1000;
-const NOW = Date.now();
-function isOperatorActive(opId) {
+function operatorIsActive(op) {
+  const o = op.operator ?? {};
+  if (o.disabled) return false;
+  if (o.rejected) return false;
+  return true;
+}
+
+function lastHeartbeatFor(opId) {
   const sites = cashByOp.get(opId) ?? {};
   let last = 0;
   for (const regs of Object.values(sites)) {
@@ -78,7 +87,7 @@ function isOperatorActive(opId) {
       }
     }
   }
-  return { active: last > 0 && NOW - last < NINETY_DAYS, lastHeartbeat: last ? new Date(last).toISOString() : null };
+  return last ? new Date(last).toISOString() : null;
 }
 
 // ---- Model lookup (Vectron) ------------------------------------------------
@@ -213,29 +222,30 @@ const stats = {
   sitesWritten: 0,
   devicesWritten: 0,
   detailsWritten: 0,
-  skippedInactive: 0,
-  skippedNoSites: 0,
-  skippedNoCash: 0,
+  skippedDisabled: 0,
+  customersWithoutSites: 0,
+  sitesWithoutCash: 0,
   skippedUnknownModel: 0,
   errors: 0,
 };
 
 for (const op of operators) {
   stats.operators++;
-  const { active, lastHeartbeat } = isOperatorActive(op.operatorId);
-  if (!active) {
-    stats.skippedInactive++;
+  if (!operatorIsActive(op)) {
+    stats.skippedDisabled++;
     continue;
   }
+  const lastHeartbeat = lastHeartbeatFor(op.operatorId);
   const cashSites = cashByOp.get(op.operatorId) ?? {};
-  if (!Array.isArray(op.sites) || op.sites.length === 0) {
-    stats.skippedNoSites++;
-    continue;
-  }
 
   try {
     const customer = await upsertCustomer(op, lastHeartbeat);
     if (!DRY) stats.customersWritten++;
+
+    if (!Array.isArray(op.sites) || op.sites.length === 0) {
+      stats.customersWithoutSites++;
+      continue;
+    }
 
     for (const site of op.sites) {
       const siteRow = await upsertSite(customer.id, site);
@@ -243,7 +253,7 @@ for (const op of operators) {
 
       const registers = cashSites[site.siteUuid];
       if (!Array.isArray(registers) || registers.length === 0) {
-        stats.skippedNoCash++;
+        stats.sitesWithoutCash++;
         continue;
       }
       for (const cr of registers) {

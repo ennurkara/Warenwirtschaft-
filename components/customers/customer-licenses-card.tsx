@@ -45,12 +45,14 @@ export function CustomerLicensesCard({
               </span>
             </span>
           )}
-          <AddLicenseDialog customerId={customerId} />
+          {isAdmin && <AddLicenseDialog customerId={customerId} />}
         </div>
       </div>
       {licenses.length === 0 ? (
         <div className="px-[18px] py-4 text-[13px] text-[var(--ink-3)]">
-          Keine Lizenzen erfasst — über „Lizenz hinzufügen" aus dem Apro-Katalog wählen.
+          {isAdmin
+            ? 'Keine Lizenzen erfasst — über „Lizenz hinzufügen" aus dem Apro-Katalog wählen.'
+            : 'Keine Lizenzen erfasst.'}
         </div>
       ) : (
         <div className="divide-y divide-[var(--rule-soft)]">

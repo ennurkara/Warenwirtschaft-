@@ -15,3 +15,4 @@ tsconfig.tsbuildinfo
 
 # Vectron import working data — enthaelt Wartungspasswoerter, nicht committen
 /data/vectron-operators/
+/data/apro-licenses/

@@ -93,16 +93,22 @@ export function CustomerSitesCard({ sites, devices }: { sites: CustomerSite[]; d
                   {(site.email || site.phone) && (
                     <div className="flex items-center gap-4 text-[12px] text-[var(--ink-3)]">
                       {site.email && (
-                        <span className="inline-flex items-center gap-1">
+                        <a
+                          href={`mailto:${site.email}`}
+                          className="inline-flex items-center gap-1 hover:text-[var(--blue)] transition-colors"
+                        >
                           <Mail className="h-3 w-3" />
                           {site.email}
-                        </span>
+                        </a>
                       )}
                       {site.phone && (
-                        <span className="inline-flex items-center gap-1">
+                        <a
+                          href={`tel:${site.phone.replace(/[^\d+]/g, '')}`}
+                          className="inline-flex items-center gap-1 hover:text-[var(--blue)] transition-colors"
+                        >
                           <Phone className="h-3 w-3" />
                           {site.phone}
-                        </span>
+                        </a>
                       )}
                     </div>
                   )}

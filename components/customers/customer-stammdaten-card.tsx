@@ -51,8 +51,22 @@ export function CustomerStammdatenCard({ customer }: { customer: Customer }) {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-4 p-[18px]">
         <DetailField label="Name" value={customer.name || '—'} />
-        <DetailField label="E-Mail" value={customer.email || '—'} />
-        <DetailField label="Telefon" value={customer.phone || '—'} />
+        <DetailField
+          label="E-Mail"
+          value={
+            customer.email
+              ? <a href={`mailto:${customer.email}`} className="hover:text-[var(--blue)] transition-colors">{customer.email}</a>
+              : '—'
+          }
+        />
+        <DetailField
+          label="Telefon"
+          value={
+            customer.phone
+              ? <a href={`tel:${customer.phone.replace(/[^\d+]/g, '')}`} className="hover:text-[var(--blue)] transition-colors">{customer.phone}</a>
+              : '—'
+          }
+        />
         <DetailField label="Straße + Nr." value={customer.address || '—'} />
         <DetailField label="PLZ" value={customer.postal_code || '—'} />
         <DetailField label="Ort" value={customer.city || '—'} />

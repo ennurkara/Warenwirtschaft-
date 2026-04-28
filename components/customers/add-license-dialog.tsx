@@ -38,6 +38,7 @@ export function AddLicenseDialog({ customerId }: { customerId: string }) {
   const [monthlyFee, setMonthlyFee] = useState('')
   const [vkPreis, setVkPreis] = useState('')
   const [ekPreis, setEkPreis] = useState('')
+  const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<'aktiv' | 'gekuendigt' | 'abgelaufen'>('aktiv')
 
@@ -78,6 +79,7 @@ export function AddLicenseDialog({ customerId }: { customerId: string }) {
       return
     }
     setIsSaving(true)
+    const q = quantity ? Math.max(1, Math.round(Number(quantity))) : 1
     const { error } = await supabase.from('licenses').insert({
       customer_id: customerId,
       model_id: modelId,
@@ -87,6 +89,7 @@ export function AddLicenseDialog({ customerId }: { customerId: string }) {
       monthly_update_fee: monthlyFee ? Number(monthlyFee) : null,
       vk_preis: vkPreis ? Number(vkPreis) : null,
       ek_preis: ekPreis ? Number(ekPreis) : null,
+      quantity: q,
       status,
       notes: notes || null,
     })
@@ -97,7 +100,7 @@ export function AddLicenseDialog({ customerId }: { customerId: string }) {
     }
     toast.success('Lizenz hinzugefügt')
     setOpen(false)
-    setModelId(''); setLicenseKey(''); setMonthlyFee(''); setVkPreis(''); setEkPreis(''); setNotes('')
+    setModelId(''); setLicenseKey(''); setMonthlyFee(''); setVkPreis(''); setEkPreis(''); setQuantity('1'); setNotes('')
     router.refresh()
   }
 
@@ -160,7 +163,11 @@ export function AddLicenseDialog({ customerId }: { customerId: string }) {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label>Anzahl</Label>
+              <Input type="number" min="1" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+            </div>
             <div className="space-y-1">
               <Label>VK einmalig (€)</Label>
               <Input type="number" step="0.01" value={vkPreis} onChange={e => setVkPreis(e.target.value)} />

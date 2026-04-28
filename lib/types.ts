@@ -157,6 +157,8 @@ export interface License {
   ek_preis: number | null
   vk_preis: number | null
   status: LicenseStatus
+  quantity: number          // Lizenzmenge (default 1)
+  assigned: number          // bereits vergeben (default 0)
   notes: string | null
   created_at: string
   updated_at: string

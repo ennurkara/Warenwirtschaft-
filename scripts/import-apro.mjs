@@ -138,18 +138,15 @@ for (const c of data.customers) {
         continue;
       }
       const lizenzmenge = parseInt(row[5], 10);
-      const verbleibend = parseInt(row[8], 10);
-      const noteParts = [];
-      if (row[2]) noteParts.push(`APRO Lizenz-ID: ${row[2]}`);
-      if (!isNaN(lizenzmenge)) noteParts.push(`Lizenzmenge: ${lizenzmenge}`);
-      if (!isNaN(verbleibend)) noteParts.push(`Verbleibend: ${verbleibend}`);
-
+      const allokiert = parseInt(row[7], 10);
       const insertRow = {
         customer_id: customerId,
         model_id: modelId,
         name: licenseName,
         status: "aktiv",
-        notes: noteParts.length ? noteParts.join(" · ") : null,
+        quantity: !isNaN(lizenzmenge) ? lizenzmenge : 1,
+        assigned: !isNaN(allokiert) ? allokiert : 0,
+        notes: row[2] ? `APRO Lizenz-ID: ${row[2]}` : null,
       };
       if (DRY) {
         stats.licensesWritten++;

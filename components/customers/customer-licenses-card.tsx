@@ -54,29 +54,45 @@ export function CustomerLicensesCard({
         </div>
       ) : (
         <div className="divide-y divide-[var(--rule-soft)]">
-          {licenses.map(l => (
-            <div key={l.id} className="px-[18px] py-3 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center">
-              <div className="min-w-0">
-                <div className="text-[13.5px] font-medium text-[var(--ink)] truncate">{l.name}</div>
-                {l.license_key && (
-                  <div className="text-[12px] text-[var(--ink-3)] font-mono truncate">{l.license_key}</div>
-                )}
+          {licenses.map(l => {
+            const q = l.quantity ?? 1
+            const a = l.assigned ?? 0
+            const remaining = q - a
+            return (
+              <div key={l.id} className="px-[18px] py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto_auto_auto_auto_auto] gap-3 items-center">
+                <div
+                  className={`shrink-0 inline-flex items-center justify-center min-w-[34px] h-[26px] rounded-md font-mono tabular-nums text-[13px] font-semibold ${
+                    q > 1 ? 'bg-[var(--blue-tint)] text-[var(--blue)]' : 'bg-[var(--paper-3)] text-[var(--ink-2)]'
+                  }`}
+                  title={`Lizenzmenge: ${q} · vergeben: ${a} · verbleibend: ${remaining}`}
+                >
+                  {q}×
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13.5px] font-medium text-[var(--ink)] truncate">{l.name}</div>
+                  <div className="text-[11.5px] text-[var(--ink-3)] truncate">
+                    {a > 0 || q > 1 ? <>vergeben {a} · verbleibend {remaining}</> : null}
+                    {l.license_key && (
+                      <span className="ml-2 font-mono">{l.license_key}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-[12.5px] text-[var(--ink-3)]">
+                  {l.purchased_at ? formatDate(l.purchased_at) : '—'}
+                </div>
+                <div className="text-[12.5px] text-[var(--ink-2)] font-mono tabular-nums" title="VK einmalig">
+                  {l.vk_preis !== null ? formatCurrency(Number(l.vk_preis)) : '—'}
+                </div>
+                <div className="text-[12.5px] text-[var(--ink-2)] font-mono tabular-nums" title="Update-Gebühr / Monat">
+                  {l.monthly_update_fee !== null ? `${formatCurrency(Number(l.monthly_update_fee))}/M` : '—'}
+                </div>
+                <Badge variant={STATUS_VARIANT[l.status]} withDot>{l.status}</Badge>
+                {isAdmin
+                  ? <DeleteLicenseButton licenseId={l.id} licenseName={l.name} />
+                  : <span className="w-[26px]" aria-hidden />}
               </div>
-              <div className="text-[12.5px] text-[var(--ink-3)]">
-                {l.purchased_at ? formatDate(l.purchased_at) : '—'}
-              </div>
-              <div className="text-[12.5px] text-[var(--ink-2)] font-mono tabular-nums" title="VK einmalig">
-                {l.vk_preis !== null ? formatCurrency(Number(l.vk_preis)) : '—'}
-              </div>
-              <div className="text-[12.5px] text-[var(--ink-2)] font-mono tabular-nums" title="Update-Gebühr / Monat">
-                {l.monthly_update_fee !== null ? `${formatCurrency(Number(l.monthly_update_fee))}/M` : '—'}
-              </div>
-              <Badge variant={STATUS_VARIANT[l.status]} withDot>{l.status}</Badge>
-              {isAdmin
-                ? <DeleteLicenseButton licenseId={l.id} licenseName={l.name} />
-                : <span className="w-[26px]" aria-hidden />}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

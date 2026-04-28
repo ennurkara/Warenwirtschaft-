@@ -73,19 +73,56 @@ export function LifecycleActions({ deviceId, status }: Props) {
     )
   }
 
-  // Verliehen / Legacy im_einsatz: Rücknahme
-  if (status === 'verliehen' || status === 'im_einsatz') {
+  // Verliehen: temporäre Leihe → Rückgabe ins Lager
+  if (status === 'verliehen') {
     buttons.push(
       <Button
         key="ruecknehmen"
         variant="secondary"
-        onClick={() => callReturnRpc('lager', 'Gerät vom Kunden zurücknehmen?')}
+        onClick={() => callReturnRpc('lager', 'Leihgerät vom Kunden zurücknehmen?')}
         disabled={busy !== null}
       >
         {busy === 'lager'
           ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
           : <ArrowDownToLine className="h-4 w-4 mr-1.5" />}
         Zurücknehmen
+      </Button>,
+    )
+  }
+
+  // Im Einsatz: permanent beim Kunden installiert. Kasse kann nur via
+  // Vertragsende abgeholt, zur Reparatur eingesendet oder ausgemustert werden.
+  if (status === 'im_einsatz') {
+    buttons.push(
+      <Button
+        key="abgeholt"
+        variant="secondary"
+        onClick={() => callReturnRpc('lager', 'Kasse vom Kunden abgeholt (z.B. Vertragsende)? Wandert ins Lager.')}
+        disabled={busy !== null}
+      >
+        {busy === 'lager'
+          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          : <ArrowDownToLine className="h-4 w-4 mr-1.5" />}
+        Vom Kunden abgeholt
+      </Button>,
+      <Button
+        key="zur-reparatur-einsatz"
+        variant="secondary"
+        onClick={() => callReturnRpc('in_reparatur', 'Kasse zur Service-Reparatur entgegennehmen?')}
+        disabled={busy !== null}
+      >
+        {busy === 'in_reparatur'
+          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          : <Send className="h-4 w-4 mr-1.5" />}
+        Zur Reparatur
+      </Button>,
+      <Button
+        key="ausmustern-einsatz"
+        variant="outline"
+        onClick={() => callReturnRpc('ausgemustert', 'Kasse endgültig ausmustern? Kann nicht zurückgesetzt werden.')}
+        disabled={busy !== null}
+      >
+        <Archive className="h-4 w-4 mr-1.5" /> Ausmustern
       </Button>,
     )
   }

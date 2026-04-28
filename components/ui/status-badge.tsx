@@ -3,9 +3,9 @@ import { Badge } from './badge'
 export type DeviceStatus =
   | 'lager'
   | 'reserviert'
-  | 'verliehen'
-  | 'im_einsatz'   // Legacy — semantisch = verliehen
-  | 'verkauft'
+  | 'verliehen'    // temporaere Leihe (z.B. Ersatzgeraet)
+  | 'im_einsatz'   // installiert beim Kunden, ohne Sale-Beleg (z.B. Vectron-Import)
+  | 'verkauft'     // beim Kunden mit Sale-Beleg
   | 'in_reparatur'
   | 'defekt'
   | 'ausgemustert'
@@ -13,9 +13,9 @@ export type DeviceStatus =
 const MAP: Record<DeviceStatus, { label: string; variant: 'lager' | 'reserv' | 'verkauft' | 'defekt' | 'aus' }> = {
   lager:        { label: 'Im Lager',     variant: 'lager' },
   reserviert:   { label: 'Reserviert',   variant: 'reserv' },
-  verliehen:    { label: 'Verliehen',    variant: 'verkauft' },   // blau
-  im_einsatz:   { label: 'Verliehen',    variant: 'verkauft' },   // legacy → verliehen
-  verkauft:     { label: 'Im Einsatz',   variant: 'verkauft' },   // blau (Kunde nutzt es aktiv)
+  verliehen:    { label: 'Verliehen',    variant: 'verkauft' },   // blau (Leihe)
+  im_einsatz:   { label: 'Im Einsatz',   variant: 'verkauft' },   // blau (installiert beim Kunden)
+  verkauft:     { label: 'Im Einsatz',   variant: 'verkauft' },   // blau (Kunde nutzt es aktiv via Sale)
   in_reparatur: { label: 'In Reparatur', variant: 'reserv' },     // amber (Aufgabe)
   defekt:       { label: 'Defekt',       variant: 'defekt' },     // rot
   ausgemustert: { label: 'Ausgemustert', variant: 'aus' },

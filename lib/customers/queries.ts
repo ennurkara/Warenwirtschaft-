@@ -1,8 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import type { Contract, Customer, Device, License, WorkReport } from '@/lib/types'
+import type { Contract, Customer, CustomerSite, Device, License, WorkReport } from '@/lib/types'
 import { DEVICE_SELECT } from '@/lib/inventory/queries'
 
 export interface CustomerDetail extends Customer {
+  sites: CustomerSite[]
   devices: Device[]
   contracts: Contract[]
   licenses: License[]
@@ -11,6 +12,7 @@ export interface CustomerDetail extends Customer {
 
 export const CUSTOMER_DETAIL_SELECT = `
   *,
+  sites:customer_sites(*),
   devices:devices!current_customer_id(${DEVICE_SELECT}),
   contracts(*, ec_device:devices!ec_device_id(${DEVICE_SELECT})),
   licenses(*, model:models(*, manufacturer:manufacturers(*), category:categories(*))),

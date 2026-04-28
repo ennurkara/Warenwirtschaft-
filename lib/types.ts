@@ -84,9 +84,32 @@ export interface Customer {
   address: string | null
   postal_code: string | null
   city: string | null
+  country: string | null
+  vat_id: string | null
+  tax_number: string | null
+  customer_number: string | null
+  vectron_operator_id: string | null
+  last_heartbeat_at: string | null
   notes: string | null
   customer_kind: CustomerKind
   created_at: string
+}
+
+export interface CustomerSite {
+  id: string
+  customer_id: string
+  vectron_site_id: string | null
+  site_no: string | null
+  name: string
+  street: string | null
+  postal_code: string | null
+  city: string | null
+  country: string | null
+  email: string | null
+  phone: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ---------- TSE / Verträge / Lizenzen ----------
@@ -147,7 +170,15 @@ export interface VectronDetails {
   sw_serial: string | null
   fiskal_2020: boolean
   zvt: boolean
-  license_type: VectronLicenseType
+  license_type: VectronLicenseType | null
+  sw_version: string | null
+  os_version: string | null
+  platform: string | null
+  login: string | null
+  connect_id: string | null
+  fiscal_identifier: string | null
+  last_heartbeat_at: string | null
+  vectron_cash_register_id: string | null
 }
 
 export interface Device {
@@ -162,6 +193,8 @@ export interface Device {
   updated_at: string
   /** FK auf customers — wer hat das Gerät grade (verliehen oder verkauft). */
   current_customer_id: string | null
+  /** FK auf customer_sites — bei Vectron-Kassen die zugeordnete Filiale. */
+  site_id: string | null
   model?: Model
   vectron_details?: VectronDetails | null
   tse_details?: TseDetails | null

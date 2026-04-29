@@ -15,7 +15,7 @@
 //   vectron_details.vectron_cash_register_id
 
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,21 +23,27 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const DATA = join(ROOT, "data", "vectron-operators");
 
-// dotenv-light: lese .env.local
-const env = Object.fromEntries(
-  readFileSync(join(ROOT, ".env.local"), "utf-8")
-    .split("\n")
-    .filter((l) => l.trim() && !l.startsWith("#") && l.includes("="))
-    .map((l) => {
-      const i = l.indexOf("=");
-      return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    }),
-);
+// dotenv-light: lese .env.local fuer lokale Laeufe; in CI fallen wir auf
+// process.env zurueck (Secrets werden via env: am Step injected).
+const env = (() => {
+  const path = join(ROOT, ".env.local");
+  if (!existsSync(path)) return process.env;
+  const fileEnv = Object.fromEntries(
+    readFileSync(path, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("#") && l.includes("="))
+      .map((l) => {
+        const i = l.indexOf("=");
+        return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")];
+      }),
+  );
+  return { ...process.env, ...fileEnv };
+})();
 
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY (.env.local oder env-vars)");
   process.exit(1);
 }
 

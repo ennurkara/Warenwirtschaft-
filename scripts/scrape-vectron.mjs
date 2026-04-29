@@ -98,6 +98,7 @@ const ctx = await browser.newContext({
   userAgent:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
 });
+
 const page = await ctx.newPage();
 
 // Auth-Header + Grant-Request-Body sniffen.
@@ -305,13 +306,26 @@ for (const st of statesFull.cashRegisterStates ?? []) {
 // gegen /login-api/grant zu machen — der Response setzt einen operator-scoped
 // x-authorization-token, der dann fuer /operator-api/* Calls noetig ist.
 async function fetchOperatorDetails(operatorId) {
+  // waitUntil "commit" statt "networkidle" — wir brauchen nicht alle Sub-Resources.
+  // Stattdessen warten wir explizit auf den /login-api/grant-Response, weil DAS
+  // der Trigger fuer den frischen operator-scoped x-authorization-token ist.
+  const grantPromise = page
+    .waitForResponse(
+      (r) => r.url().endsWith("/login-api/grant") && r.status() === 200,
+      { timeout: 20_000 },
+    )
+    .catch(() => null);
+
   await page
     .goto(`${PORTAL_URL}/${captured.servicePartnerId}/operators/${operatorId}`, {
-      waitUntil: "networkidle",
-      timeout: 30_000,
+      waitUntil: "commit",
+      timeout: 20_000,
     })
     .catch(() => {});
-  await page.waitForTimeout(300);
+  await grantPromise;
+  // Der page.on("request")-Sniffer hat captured.authToken jetzt aktualisiert.
+  // Kurze Atempause damit JS-Code-Bahnen vollstaendig durch sind.
+  await page.waitForTimeout(50);
 
   const opAuthToken = captured.authToken;
   const safeJson = async (p) => {
@@ -358,7 +372,7 @@ for (const opMeta of operators) {
     };
     operatorsFull.push(merged);
     writeFileSync(join(EXPORT_DIR, `${operatorId}.json`), JSON.stringify(merged));
-    if (i % 25 === 0) log(`  ${i}/${operators.length} operators done`);
+    if (i % 10 === 0 || i === operators.length) log(`  ${i}/${operators.length} operators done`);
   } catch (e) {
     log(`ERR [${i}/${operators.length}] operator ${operatorId}: ${e.message}`);
   }

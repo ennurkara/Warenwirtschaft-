@@ -14,7 +14,7 @@
 //                 angelegt (vermeidet Duplikate).
 
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,15 +22,22 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const DATA_FILE = join(ROOT, "data", "apro-licenses", "apro_full.json");
 
-const env = Object.fromEntries(
-  readFileSync(join(ROOT, ".env.local"), "utf-8")
-    .split("\n")
-    .filter((l) => l.trim() && !l.startsWith("#") && l.includes("="))
-    .map((l) => {
-      const i = l.indexOf("=");
-      return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    }),
-);
+// dotenv-light: lese .env.local fuer lokale Laeufe; in CI fallen wir auf
+// process.env zurueck (Secrets werden via env: am Step injected).
+const env = (() => {
+  const path = join(ROOT, ".env.local");
+  if (!existsSync(path)) return process.env;
+  const fileEnv = Object.fromEntries(
+    readFileSync(path, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("#") && l.includes("="))
+      .map((l) => {
+        const i = l.indexOf("=");
+        return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")];
+      }),
+  );
+  return { ...process.env, ...fileEnv };
+})();
 
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },

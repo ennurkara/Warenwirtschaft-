@@ -115,16 +115,19 @@ jobs:
           path: data/
 
       - name: Import Vectron
+        # pipefail — sonst versteckt `tee` einen Crash des Skripts (exit-code von tee = 0).
+        shell: bash -eo pipefail {0}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/import-vectron.mjs | tee vectron-import.log
+        run: node scripts/import-vectron.mjs 2>&1 | tee vectron-import.log
 
       - name: Import APRO
+        shell: bash -eo pipefail {0}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/import-apro.mjs | tee apro-import.log
+        run: node scripts/import-apro.mjs 2>&1 | tee apro-import.log
 
       - name: Comment + close issue
         env:

@@ -1,0 +1,148 @@
+name: Portal-Sync (Vectron + APRO)
+
+# Wochentlicher Sync der externen Portale.
+#
+# Job A laeuft automatisch jeden Montag um 06:00 UTC (= 08:00 lokal Sommer / 07:00
+# Winter), scraped beide Portale, vergleicht gegen die Prod-DB und postet einen
+# Diff als GitHub Issue.
+#
+# Job B (import) ist hinter dem Environment "portal-imports" gegated. Er laeuft
+# erst nach manueller Freigabe (Approval-Klick im Run, auch via GitHub Mobile App).
+# Default-Approval-Timeout ist 30 Tage.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scrape-and-report:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.report.outputs.has_changes }}
+      total_changes: ${{ steps.report.outputs.total_changes }}
+      issue_url: ${{ steps.issue.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Scrape Vectron
+        env:
+          VECTRON_USER: ${{ secrets.VECTRON_USER }}
+          VECTRON_PASS: ${{ secrets.VECTRON_PASS }}
+        run: node scripts/scrape-vectron.mjs
+
+      - name: Scrape APRO
+        env:
+          APRO_USER: ${{ secrets.APRO_USER }}
+          APRO_PASS: ${{ secrets.APRO_PASS }}
+        run: node scripts/scrape-apro.mjs
+
+      - name: Build diff report
+        id: report
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/sync-report.mjs > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload scraped data
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraped-data
+          path: |
+            data/vectron-operators/
+            data/apro-licenses/
+          retention-days: 90
+
+      - name: Create review issue (only if diff > 0)
+        id: issue
+        if: steps.report.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date -u +"%Y-%m-%d")
+          URL=$(gh issue create \
+            --title "Portal-Sync $DATE — ${{ steps.report.outputs.total_changes }} Aenderungen" \
+            --body-file report.md \
+            --label "sync-pending")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Issue: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: No-op note (no diff)
+        if: steps.report.outputs.has_changes != 'true'
+        run: echo "Keine Aenderungen — kein Issue erstellt, Job B wird geskippt."
+
+  import:
+    needs: scrape-and-report
+    if: needs.scrape-and-report.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    # Manuelle Freigabe: in GitHub Repo Settings -> Environments dieses Environment
+    # mit "Required reviewers" konfigurieren. Erst nach Approval startet dieser Job.
+    environment: portal-imports
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download scraped data
+        uses: actions/download-artifact@v4
+        with:
+          name: scraped-data
+          path: data/
+
+      - name: Import Vectron
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/import-vectron.mjs | tee vectron-import.log
+
+      - name: Import APRO
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/import-apro.mjs | tee apro-import.log
+
+      - name: Comment + close issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ needs.scrape-and-report.outputs.issue_url }}
+        run: |
+          {
+            echo "## Import abgeschlossen"
+            echo ""
+            echo "### Vectron"
+            echo '```'
+            tail -30 vectron-import.log
+            echo '```'
+            echo ""
+            echo "### APRO"
+            echo '```'
+            tail -30 apro-import.log
+            echo '```'
+          } > comment.md
+          gh issue comment "$ISSUE_URL" --body-file comment.md
+          gh issue close "$ISSUE_URL" --reason completed

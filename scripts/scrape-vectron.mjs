@@ -34,6 +34,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const OUT_DIR = join(ROOT, "data", "vectron-operators");
 const EXPORT_DIR = join(OUT_DIR, "vectron_export");
+const CASH_DIR = join(OUT_DIR, "vectron_cash");
 
 const args = new Set(process.argv.slice(2));
 const DEBUG = args.has("--debug");
@@ -71,6 +72,7 @@ if (!VECTRON_USER || !VECTRON_PASS) {
 // ---- Setup -------------------------------------------------------------
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(EXPORT_DIR, { recursive: true });
+mkdirSync(CASH_DIR, { recursive: true });
 
 const log = (...x) => console.log(`[${new Date().toISOString().slice(11, 19)}]`, ...x);
 const logDebug = (...x) => DEBUG && console.log(`[debug]`, ...x);
@@ -297,8 +299,28 @@ writeFileSync(join(OUT_DIR, "vectron_states_full.json"), JSON.stringify(statesFu
 
 // Status-Monitor in Map fuer schnellen Lookup beim CSV-Build
 const stateByCashRegisterId = new Map();
+// Pro Operator: { siteUuid: [crEntries] } — wird zu vectron_cash/<id>.json,
+// im Format das der existierende import-vectron.mjs erwartet.
+const cashByOperator = new Map();
 for (const st of statesFull.cashRegisterStates ?? []) {
   stateByCashRegisterId.set(st.cashRegisterId, st);
+  if (!st.operatorId || !st.siteId) continue;
+  if (!cashByOperator.has(st.operatorId)) cashByOperator.set(st.operatorId, {});
+  const sites = cashByOperator.get(st.operatorId);
+  if (!sites[st.siteId]) sites[st.siteId] = [];
+  sites[st.siteId].push({
+    cashRegisterId: st.cashRegisterId,
+    serialNumber: st.serialNumber,
+    name: st.cashRegisterName,
+    siteName: st.siteName,
+    // Felder die der Status-Monitor nicht liefert, aber import-vectron.mjs liest:
+    // login, fiscalIdentifier, cashRegisterNumber, maintenanceConfiguration.
+    // Bleiben null — vectron_details wird mit null fuer diese Felder gefuellt.
+    login: null,
+    fiscalIdentifier: null,
+    cashRegisterNumber: null,
+    maintenanceConfiguration: null,
+  });
 }
 
 // ---- Pro Operator: grant token + Detail-Daten --------------------------
@@ -372,6 +394,17 @@ for (const opMeta of operators) {
     };
     operatorsFull.push(merged);
     writeFileSync(join(EXPORT_DIR, `${operatorId}.json`), JSON.stringify(merged));
+    // Zusaetzliches Output-Format das der bestehende import-vectron.mjs erwartet:
+    // { operatorId, name, sites: { siteUuid: [crs] } } — synthetisiert aus dem
+    // Status-Monitor (siehe cashByOperator-Aufbau weiter oben).
+    writeFileSync(
+      join(CASH_DIR, `${operatorId}.json`),
+      JSON.stringify({
+        operatorId,
+        name: merged.name,
+        sites: cashByOperator.get(operatorId) ?? {},
+      }),
+    );
     if (i % 10 === 0 || i === operators.length) log(`  ${i}/${operators.length} operators done`);
   } catch (e) {
     log(`ERR [${i}/${operators.length}] operator ${operatorId}: ${e.message}`);

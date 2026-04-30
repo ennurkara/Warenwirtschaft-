@@ -5,9 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 // Reveal-on-demand fuer das Vectron-Master-Passwort der Kasse
 // (8-stellig numerisch, das was an der Kasse selbst eingegeben wird).
 // Doppelt gegated:
-//   - Server-Action prueft profile.role === 'admin'
-//   - Tabelle vectron_master_passwords hat RLS admin-only
-// Ohne beide Layer waere das Passwort fuer Mitarbeiter/Techniker abrufbar.
+//   - Server-Action prueft profile.role IN ('admin', 'techniker')
+//   - Tabelle vectron_master_passwords hat SELECT-RLS auf dieselbe Rollen-Liste
+// Mitarbeiter und viewer bleiben aussen vor.
+
+const ALLOWED_ROLES = new Set(['admin', 'techniker'])
 
 export async function revealMasterPassword(
   deviceId: string,
@@ -23,7 +25,9 @@ export async function revealMasterPassword(
     .select('role')
     .eq('id', user.id)
     .single()
-  if (profile?.role !== 'admin') return { password: null, error: 'forbidden' }
+  if (!profile?.role || !ALLOWED_ROLES.has(profile.role)) {
+    return { password: null, error: 'forbidden' }
+  }
 
   const { data, error } = await supabase
     .from('vectron_master_passwords')

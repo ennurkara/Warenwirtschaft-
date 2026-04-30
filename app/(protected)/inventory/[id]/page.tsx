@@ -64,10 +64,12 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
   const currentCustomer = currentCustomerRes.data as { id: string; name: string | null } | null
   const historyRows = (historyRes.data ?? []) as unknown as Parameters<typeof AssignmentHistory>[0]['rows']
 
-  // Existenzpruefung Master-Passwort (RLS: nur admin sieht die Zeile ueberhaupt).
-  // Wert wird NICHT hier gefetcht — erst beim Aufdecken-Klick via Server-Action.
+  // Existenzpruefung Master-Passwort (RLS: admin + techniker duerfen lesen,
+  // mitarbeiter/viewer sehen die Tabelle nicht). Wert wird NICHT hier gefetcht
+  // — erst beim Aufdecken-Klick via Server-Action.
+  const canSeeMasterPassword = isAdmin || profile?.role === 'techniker'
   let hasMasterPassword = false
-  if (isAdmin) {
+  if (canSeeMasterPassword) {
     const { count } = await supabase
       .from('vectron_master_passwords')
       .select('device_id', { count: 'exact', head: true })

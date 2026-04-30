@@ -368,6 +368,30 @@ async function fetchOperatorDetails(operatorId) {
     safeJson(`/operator-api/v1/operators/${operatorId}/fiscal-data-summary?timeZone=Europe/Berlin`),
   ]);
 
+  // Pro-Kasse-Detail-Call: GET /operator-api/v1/cash-registers/{id} liefert
+  //   maintenanceConfiguration.password  (Master-Passwort)
+  //   login, cashRegisterNumber, fiscalIdentifier  (heute alle null im states-Snapshot)
+  // Wir mergen die Felder direkt in cashByOperator, der downstream zu
+  // vectron_cash/<operatorId>.json serialisiert wird (was import-vectron.mjs liest).
+  const cashRegisters = [];
+  for (const list of Object.values(cashByOperator.get(operatorId) ?? {})) {
+    if (Array.isArray(list)) for (const cr of list) cashRegisters.push(cr);
+  }
+  if (cashRegisters.length > 0) {
+    const details = await Promise.all(
+      cashRegisters.map((cr) => safeJson(`/operator-api/v1/cash-registers/${cr.cashRegisterId}`)),
+    );
+    for (let i = 0; i < cashRegisters.length; i++) {
+      const d = details[i];
+      if (!d) continue;
+      const cr = cashRegisters[i];
+      cr.login = d.login ?? cr.login;
+      cr.fiscalIdentifier = d.fiscalIdentifier ?? cr.fiscalIdentifier;
+      cr.cashRegisterNumber = d.cashRegisterNumber ?? cr.cashRegisterNumber;
+      cr.maintenanceConfiguration = d.maintenanceConfiguration ?? cr.maintenanceConfiguration;
+    }
+  }
+
   return {
     operator: opData,
     sites: Array.isArray(sitesData) ? sitesData : sitesData?.content ?? [],
@@ -434,7 +458,6 @@ const csvHeader = [
   "name",
   "login",
   "connectId",
-  "maintenancePassword",
   "brand",
   "type",
   "version",
@@ -500,7 +523,6 @@ for (const opFull of operatorsFull) {
           "",
           "",
           "",
-          "",
         ]
           .map(csvCell)
           .join(";"),
@@ -528,7 +550,6 @@ for (const opFull of operatorsFull) {
           cr.cashRegisterName || "",
           cr.login || "",
           cr.connectId || "",
-          cr.maintenancePassword || "",
           cr.brand || "",
           cr.type || "",
           cr.version || "",

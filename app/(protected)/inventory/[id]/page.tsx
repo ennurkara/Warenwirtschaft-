@@ -6,6 +6,7 @@ import { SellDialog } from '@/components/inventory/sell-dialog'
 import { AddPurchaseForm } from '@/components/inventory/add-purchase-form'
 import { LifecycleActions } from '@/components/inventory/lifecycle-actions'
 import { AssignmentHistory } from '@/components/inventory/assignment-history'
+import { MaintenancePasswordRow } from '@/components/inventory/maintenance-password-row'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
@@ -62,6 +63,17 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
   ])
   const currentCustomer = currentCustomerRes.data as { id: string; name: string | null } | null
   const historyRows = (historyRes.data ?? []) as unknown as Parameters<typeof AssignmentHistory>[0]['rows']
+
+  // Existenzpruefung Master-Passwort (RLS: nur admin sieht die Zeile ueberhaupt).
+  // Wert wird NICHT hier gefetcht — erst beim Aufdecken-Klick via Server-Action.
+  let hasMaintenancePassword = false
+  if (isAdmin) {
+    const { count } = await supabase
+      .from('vectron_cash_register_secrets')
+      .select('device_id', { count: 'exact', head: true })
+      .eq('device_id', params.id)
+    hasMaintenancePassword = (count ?? 0) > 0
+  }
 
   const modelName = device.model?.modellname ?? '—'
   const categoryName = device.model?.category?.name ?? '—'
@@ -156,6 +168,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           {v && <DetailField label="ZVT" value={v.zvt ? 'Ja' : 'Nein'} />}
           {ek && <DetailField label="EK" value={ek} mono />}
           {vk && <DetailField label="VK" value={vk} mono />}
+          {hasMaintenancePassword && <MaintenancePasswordRow deviceId={device.id} />}
           {device.location && <DetailField label="Standort" value={device.location} />}
           <DetailField label="Hinzugefügt" value={formatDate(device.created_at)} />
         </div>

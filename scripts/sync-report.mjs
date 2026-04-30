@@ -20,7 +20,7 @@
 //   2  DB-Connection-Fehler
 
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync, existsSync, appendFileSync } from "node:fs";
+import { readFileSync, existsSync, appendFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -86,6 +86,12 @@ const { data: dbVectronDetails, error: ev } = await sb
   .select("device_id, vectron_cash_register_id");
 if (ev) throw ev;
 
+// Master-Passwoerter: service-role bypassed RLS, daher direkt lesbar.
+const { data: dbSecretsRaw, error: esec } = await sb
+  .from("vectron_cash_register_secrets")
+  .select("device_id, maintenance_password");
+if (esec) throw esec;
+
 const { data: dbLicenses, error: el } = await sb
   .from("licenses")
   .select("id, customer_id, model_id, name, quantity");
@@ -114,6 +120,43 @@ for (const op of vectronOps) {
       });
     }
   }
+}
+
+// Master-Passwort-Diff: scrape vs. DB. KEINE Klartextwerte in den Report —
+// nur Counts. Wert sitzt in vectron_cash_register_secrets (admin-only RLS).
+const VECTRON_CASH_DIR = join(ROOT, "data", "vectron-operators", "vectron_cash");
+const scrapedSecrets = new Map(); // cashRegisterId -> password
+if (existsSync(VECTRON_CASH_DIR)) {
+  for (const f of readdirSync(VECTRON_CASH_DIR)) {
+    if (!f.endsWith(".json")) continue;
+    try {
+      const d = JSON.parse(readFileSync(join(VECTRON_CASH_DIR, f), "utf-8"));
+      for (const list of Object.values(d.sites ?? {})) {
+        if (!Array.isArray(list)) continue;
+        for (const cr of list) {
+          const pw = cr?.maintenanceConfiguration?.password;
+          if (cr?.cashRegisterId && pw) scrapedSecrets.set(cr.cashRegisterId, pw);
+        }
+      }
+    } catch (e) {
+      console.error(`WARN: kann ${f} nicht parsen: ${e.message}`);
+    }
+  }
+}
+
+const cashIdByDevice = new Map(dbVectronDetails.map((d) => [d.device_id, d.vectron_cash_register_id]));
+const dbSecretByCashId = new Map();
+for (const s of dbSecretsRaw ?? []) {
+  const crId = cashIdByDevice.get(s.device_id);
+  if (crId) dbSecretByCashId.set(crId, s.maintenance_password);
+}
+
+let newSecrets = 0;
+let changedSecrets = 0;
+for (const [crId, scrPw] of scrapedSecrets.entries()) {
+  const dbPw = dbSecretByCashId.get(crId);
+  if (dbPw == null) newSecrets++;
+  else if (dbPw !== scrPw) changedSecrets++;
 }
 
 const newCashRegisters = [];
@@ -194,6 +237,7 @@ lines.push("");
 
 const totalChanges =
   newOperators.length + newSites.length + newCashRegisters.length + goneOperators.length +
+  newSecrets + changedSecrets +
   newAproCustomers.length + newLicenses.length + changedQuantities.length;
 
 if (totalChanges === 0) {
@@ -223,7 +267,13 @@ if (totalChanges === 0) {
     for (const op of goneOperators.slice(0, 20)) lines.push(`  - ${op.name} (\`${op.id}\`)`);
     if (goneOperators.length > 20) lines.push(`  - … +${goneOperators.length - 20} weitere`);
   }
-  if (!newOperators.length && !newSites.length && !newCashRegisters.length && !goneOperators.length) {
+  if (newSecrets) {
+    lines.push(`- 🔑 ${newSecrets} neue Master-Passwoerter (Klartext nur in DB, admin-only)`);
+  }
+  if (changedSecrets) {
+    lines.push(`- 🔑 ${changedSecrets} Master-Passwoerter geaendert`);
+  }
+  if (!newOperators.length && !newSites.length && !newCashRegisters.length && !goneOperators.length && !newSecrets && !changedSecrets) {
     lines.push("- (keine Vectron-Aenderungen)");
   }
   lines.push("");

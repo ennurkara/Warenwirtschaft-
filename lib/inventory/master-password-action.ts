@@ -2,12 +2,14 @@
 
 import { createClient } from '@/lib/supabase/server'
 
-// Reveal-on-demand fuer das Vectron-Maintenance-Passwort. Doppelt gegated:
+// Reveal-on-demand fuer das Vectron-Master-Passwort der Kasse
+// (8-stellig numerisch, das was an der Kasse selbst eingegeben wird).
+// Doppelt gegated:
 //   - Server-Action prueft profile.role === 'admin'
-//   - Tabelle vectron_cash_register_secrets hat RLS admin-only
+//   - Tabelle vectron_master_passwords hat RLS admin-only
 // Ohne beide Layer waere das Passwort fuer Mitarbeiter/Techniker abrufbar.
 
-export async function revealMaintenancePassword(
+export async function revealMasterPassword(
   deviceId: string,
 ): Promise<{ password: string | null; error?: string }> {
   const supabase = await createClient()
@@ -24,10 +26,10 @@ export async function revealMaintenancePassword(
   if (profile?.role !== 'admin') return { password: null, error: 'forbidden' }
 
   const { data, error } = await supabase
-    .from('vectron_cash_register_secrets')
-    .select('maintenance_password')
+    .from('vectron_master_passwords')
+    .select('master_password')
     .eq('device_id', deviceId)
     .maybeSingle()
   if (error) return { password: null, error: error.message }
-  return { password: data?.maintenance_password ?? null }
+  return { password: data?.master_password ?? null }
 }

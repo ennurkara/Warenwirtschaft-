@@ -199,18 +199,19 @@ async function upsertDevice(serial, modelId, customerId, siteId) {
   return data;
 }
 
-// Master-Passwort liegt in einer separaten admin-only-RLS-Tabelle, damit es
-// nicht via DEVICE_SELECT in lib/inventory/queries.ts mit raus-gejoined werden
-// kann. Service-Role bypassed RLS — UPSERT funktioniert direkt.
-async function upsertCashRegisterSecret(deviceId, password) {
+// Master-Passwort der Kasse (8-stellig numerisch) liegt in einer separaten
+// admin-only-RLS-Tabelle, damit es nicht via DEVICE_SELECT in
+// lib/inventory/queries.ts mit raus-gejoined werden kann. Service-Role
+// bypassed RLS — UPSERT funktioniert direkt.
+async function upsertMasterPassword(deviceId, password) {
   // null nicht überschreiben — falls Vectron das Feld mal nicht ausliefert,
   // wollen wir kein gespeichertes Passwort verlieren.
   if (password == null) return false;
   if (DRY) return true;
   const { error } = await sb
-    .from("vectron_cash_register_secrets")
-    .upsert({ device_id: deviceId, maintenance_password: password }, { onConflict: "device_id" });
-  if (error) throw new Error(`secret upsert ${deviceId}: ${error.message}`);
+    .from("vectron_master_passwords")
+    .upsert({ device_id: deviceId, master_password: password }, { onConflict: "device_id" });
+  if (error) throw new Error(`master_password upsert ${deviceId}: ${error.message}`);
   return true;
 }
 
@@ -243,7 +244,7 @@ const stats = {
   sitesWritten: 0,
   devicesWritten: 0,
   detailsWritten: 0,
-  secretsWritten: 0,
+  masterPwdsWritten: 0,
   skippedDisabled: 0,
   customersWithoutSites: 0,
   sitesWithoutCash: 0,
@@ -289,8 +290,8 @@ for (const op of operators) {
         if (!DRY) stats.devicesWritten++;
         await upsertVectronDetails(device.id, cr, st);
         if (!DRY) stats.detailsWritten++;
-        const wroteSecret = await upsertCashRegisterSecret(device.id, cr.maintenanceConfiguration?.password);
-        if (!DRY && wroteSecret) stats.secretsWritten++;
+        const wrotePwd = await upsertMasterPassword(device.id, cr.masterPassword);
+        if (!DRY && wrotePwd) stats.masterPwdsWritten++;
       }
     }
   } catch (e) {

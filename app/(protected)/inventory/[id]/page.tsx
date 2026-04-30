@@ -6,7 +6,7 @@ import { SellDialog } from '@/components/inventory/sell-dialog'
 import { AddPurchaseForm } from '@/components/inventory/add-purchase-form'
 import { LifecycleActions } from '@/components/inventory/lifecycle-actions'
 import { AssignmentHistory } from '@/components/inventory/assignment-history'
-import { MaintenancePasswordRow } from '@/components/inventory/maintenance-password-row'
+import { MasterPasswordRow } from '@/components/inventory/master-password-row'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deriveDisplayStatus } from '@/lib/inventory/derive-status'
@@ -66,13 +66,13 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
 
   // Existenzpruefung Master-Passwort (RLS: nur admin sieht die Zeile ueberhaupt).
   // Wert wird NICHT hier gefetcht — erst beim Aufdecken-Klick via Server-Action.
-  let hasMaintenancePassword = false
+  let hasMasterPassword = false
   if (isAdmin) {
     const { count } = await supabase
-      .from('vectron_cash_register_secrets')
+      .from('vectron_master_passwords')
       .select('device_id', { count: 'exact', head: true })
       .eq('device_id', params.id)
-    hasMaintenancePassword = (count ?? 0) > 0
+    hasMasterPassword = (count ?? 0) > 0
   }
 
   const modelName = device.model?.modellname ?? '—'
@@ -168,7 +168,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           {v && <DetailField label="ZVT" value={v.zvt ? 'Ja' : 'Nein'} />}
           {ek && <DetailField label="EK" value={ek} mono />}
           {vk && <DetailField label="VK" value={vk} mono />}
-          {hasMaintenancePassword && <MaintenancePasswordRow deviceId={device.id} />}
+          {hasMasterPassword && <MasterPasswordRow deviceId={device.id} />}
           {device.location && <DetailField label="Standort" value={device.location} />}
           <DetailField label="Hinzugefügt" value={formatDate(device.created_at)} />
         </div>

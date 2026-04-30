@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { revealMaintenancePassword } from '@/lib/inventory/maintenance-password-action'
+import { revealMasterPassword } from '@/lib/inventory/master-password-action'
 
-export function MaintenancePasswordRow({ deviceId }: { deviceId: string }) {
+export function MasterPasswordRow({ deviceId }: { deviceId: string }) {
   const [password, setPassword] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -12,7 +12,7 @@ export function MaintenancePasswordRow({ deviceId }: { deviceId: string }) {
   async function reveal() {
     setLoading(true)
     setError(null)
-    const r = await revealMaintenancePassword(deviceId)
+    const r = await revealMasterPassword(deviceId)
     setLoading(false)
     if (r.error) {
       setError(r.error)

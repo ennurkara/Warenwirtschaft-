@@ -368,30 +368,6 @@ async function fetchOperatorDetails(operatorId) {
     safeJson(`/operator-api/v1/operators/${operatorId}/fiscal-data-summary?timeZone=Europe/Berlin`),
   ]);
 
-  // Pro-Kasse-Detail-Call: GET /operator-api/v1/cash-registers/{id} liefert
-  //   maintenanceConfiguration.password  (Master-Passwort)
-  //   login, cashRegisterNumber, fiscalIdentifier  (heute alle null im states-Snapshot)
-  // Wir mergen die Felder direkt in cashByOperator, der downstream zu
-  // vectron_cash/<operatorId>.json serialisiert wird (was import-vectron.mjs liest).
-  const cashRegisters = [];
-  for (const list of Object.values(cashByOperator.get(operatorId) ?? {})) {
-    if (Array.isArray(list)) for (const cr of list) cashRegisters.push(cr);
-  }
-  if (cashRegisters.length > 0) {
-    const details = await Promise.all(
-      cashRegisters.map((cr) => safeJson(`/operator-api/v1/cash-registers/${cr.cashRegisterId}`)),
-    );
-    for (let i = 0; i < cashRegisters.length; i++) {
-      const d = details[i];
-      if (!d) continue;
-      const cr = cashRegisters[i];
-      cr.login = d.login ?? cr.login;
-      cr.fiscalIdentifier = d.fiscalIdentifier ?? cr.fiscalIdentifier;
-      cr.cashRegisterNumber = d.cashRegisterNumber ?? cr.cashRegisterNumber;
-      cr.maintenanceConfiguration = d.maintenanceConfiguration ?? cr.maintenanceConfiguration;
-    }
-  }
-
   return {
     operator: opData,
     sites: Array.isArray(sitesData) ? sitesData : sitesData?.content ?? [],
@@ -418,23 +394,69 @@ for (const opMeta of operators) {
     };
     operatorsFull.push(merged);
     writeFileSync(join(EXPORT_DIR, `${operatorId}.json`), JSON.stringify(merged));
-    // Zusaetzliches Output-Format das der bestehende import-vectron.mjs erwartet:
-    // { operatorId, name, sites: { siteUuid: [crs] } } — synthetisiert aus dem
-    // Status-Monitor (siehe cashByOperator-Aufbau weiter oben).
-    writeFileSync(
-      join(CASH_DIR, `${operatorId}.json`),
-      JSON.stringify({
-        operatorId,
-        name: merged.name,
-        sites: cashByOperator.get(operatorId) ?? {},
-      }),
-    );
+    // vectron_cash/<id>.json wird erst NACH Phase 2 (Master-Password fetch)
+    // geschrieben — sonst fehlt cr.masterPassword im Output und der Import
+    // kann es nicht persistieren.
     if (i % 10 === 0 || i === operators.length) log(`  ${i}/${operators.length} operators done`);
   } catch (e) {
     log(`ERR [${i}/${operators.length}] operator ${operatorId}: ${e.message}`);
   }
 }
 log(`scraped ${operatorsFull.length}/${operators.length} operators`);
+
+// ---- Phase 2: Master-Passwoerter (per Kasse, Service-Partner-Token) -----
+//
+// Endpoint: GET /partner-api/v1/sites/{siteId}/cash-register/master-password/{serialNumber}
+// Antwort:  Plain-Text 8-stellige Zahl (z.B. "48544734"), kein JSON-Wrapper.
+// Token:    Service-Partner-Scope — `api()` nutzt captured.spAuthToken und
+//           refresht bei 401 automatisch via Operator-Liste-Reload.
+
+log("phase 2: fetching master passwords per cash register...");
+const phase2Items = [];
+for (const op of operatorsFull) {
+  const siteMap = cashByOperator.get(op.operatorId) ?? {};
+  for (const [siteUuid, list] of Object.entries(siteMap)) {
+    if (!Array.isArray(list)) continue;
+    for (const cr of list) {
+      if (cr?.serialNumber && siteUuid) phase2Items.push({ siteUuid, serialNumber: cr.serialNumber, ref: cr });
+    }
+  }
+}
+log(`  ${phase2Items.length} cash registers to query`);
+
+let p2done = 0, p2hits = 0, p2errors = 0;
+for (const it of phase2Items) {
+  try {
+    const r = await api(`/partner-api/v1/sites/${it.siteUuid}/cash-register/master-password/${it.serialNumber}`);
+    if (r.ok()) {
+      // Antwort ist plain-text Zahlen-String (oder JSON-quoted "12345678").
+      const raw = (await r.text()).trim().replace(/^"|"$/g, "");
+      if (/^\d{4,}$/.test(raw)) {
+        it.ref.masterPassword = raw;
+        p2hits++;
+      }
+    } else if (r.status() !== 404) {
+      p2errors++;
+    }
+  } catch {
+    p2errors++;
+  }
+  p2done++;
+  if (p2done % 100 === 0) log(`  master-pwd ${p2done}/${phase2Items.length} (hits ${p2hits}, errors ${p2errors})`);
+}
+log(`phase 2 done: ${p2hits}/${phase2Items.length} master passwords captured (${p2errors} errors)`);
+
+// Jetzt vectron_cash/<op>.json schreiben — mit den frisch gemergten masterPassword-Werten.
+for (const op of operatorsFull) {
+  writeFileSync(
+    join(CASH_DIR, `${op.operatorId}.json`),
+    JSON.stringify({
+      operatorId: op.operatorId,
+      name: op.name,
+      sites: cashByOperator.get(op.operatorId) ?? {},
+    }),
+  );
+}
 
 writeFileSync(join(OUT_DIR, "operators_full.json"), JSON.stringify(operatorsFull, null, 2));
 

@@ -88,8 +88,8 @@ if (ev) throw ev;
 
 // Master-Passwoerter: service-role bypassed RLS, daher direkt lesbar.
 const { data: dbSecretsRaw, error: esec } = await sb
-  .from("vectron_cash_register_secrets")
-  .select("device_id, maintenance_password");
+  .from("vectron_master_passwords")
+  .select("device_id, master_password");
 if (esec) throw esec;
 
 const { data: dbLicenses, error: el } = await sb
@@ -123,7 +123,7 @@ for (const op of vectronOps) {
 }
 
 // Master-Passwort-Diff: scrape vs. DB. KEINE Klartextwerte in den Report —
-// nur Counts. Wert sitzt in vectron_cash_register_secrets (admin-only RLS).
+// nur Counts. Wert sitzt in vectron_master_passwords (admin-only RLS).
 const VECTRON_CASH_DIR = join(ROOT, "data", "vectron-operators", "vectron_cash");
 const scrapedSecrets = new Map(); // cashRegisterId -> password
 if (existsSync(VECTRON_CASH_DIR)) {
@@ -134,7 +134,7 @@ if (existsSync(VECTRON_CASH_DIR)) {
       for (const list of Object.values(d.sites ?? {})) {
         if (!Array.isArray(list)) continue;
         for (const cr of list) {
-          const pw = cr?.maintenanceConfiguration?.password;
+          const pw = cr?.masterPassword;
           if (cr?.cashRegisterId && pw) scrapedSecrets.set(cr.cashRegisterId, pw);
         }
       }
@@ -148,7 +148,7 @@ const cashIdByDevice = new Map(dbVectronDetails.map((d) => [d.device_id, d.vectr
 const dbSecretByCashId = new Map();
 for (const s of dbSecretsRaw ?? []) {
   const crId = cashIdByDevice.get(s.device_id);
-  if (crId) dbSecretByCashId.set(crId, s.maintenance_password);
+  if (crId) dbSecretByCashId.set(crId, s.master_password);
 }
 
 let newSecrets = 0;

@@ -78,6 +78,9 @@ console.log(`#   skip dup tseSn:    ${skipReasons.dupTseSn}`);
 console.log(`# Records (effective): ${records.length}\n`);
 
 // ---- TSE-Modelle (USB/SD) auflösen ----------------------------------------
+// Alle Excel-Quellen sind Vectron-Kassen → Hersteller "Swissbit Vectron".
+// Es gibt parallel "Swissbit Apro" + "Swissbit Shift 4" mit denselben
+// modellname-Werten USB/SD; die wären hier falsch.
 
 const { data: tseCat, error: catErr } = await sb
   .from("categories")
@@ -86,10 +89,18 @@ const { data: tseCat, error: catErr } = await sb
   .single();
 if (catErr || !tseCat) { console.error("Kategorie 'TSE Swissbit' nicht gefunden:", catErr); process.exit(1); }
 
+const { data: vectronMf, error: mfErr } = await sb
+  .from("manufacturers")
+  .select("id")
+  .eq("name", "Swissbit Vectron")
+  .single();
+if (mfErr || !vectronMf) { console.error("Hersteller 'Swissbit Vectron' nicht gefunden:", mfErr); process.exit(1); }
+
 const { data: tseModels, error: modErr } = await sb
   .from("models")
   .select("id, modellname")
-  .eq("category_id", tseCat.id);
+  .eq("category_id", tseCat.id)
+  .eq("manufacturer_id", vectronMf.id);
 if (modErr) { console.error("models query failed:", modErr); process.exit(1); }
 
 const modelByKind = {};
@@ -98,10 +109,10 @@ for (const m of tseModels ?? []) {
   if (m.modellname === "SD")  modelByKind.sd  = m.id;
 }
 if (!modelByKind.usb || !modelByKind.sd) {
-  console.error("TSE-Modelle USB/SD fehlen unter Kategorie 'TSE Swissbit'.", modelByKind);
+  console.error("Modelle 'USB'/'SD' unter Hersteller 'Swissbit Vectron' fehlen.", modelByKind);
   process.exit(1);
 }
-console.log(`# TSE-Modelle: USB=${modelByKind.usb} SD=${modelByKind.sd}\n`);
+console.log(`# TSE-Modelle (Swissbit Vectron): USB=${modelByKind.usb} SD=${modelByKind.sd}\n`);
 
 // ---- Pro Record: Kasse + TSE finden, ggf. anlegen + tse_details upsert -----
 

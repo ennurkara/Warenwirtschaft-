@@ -15,9 +15,11 @@ import type { DeviceStatus } from '@/lib/types'
 interface Props {
   deviceId: string
   status: DeviceStatus
+  // TSEs werden nie repariert. Tausch = direkt ausmustern.
+  isTse?: boolean
 }
 
-export function LifecycleActions({ deviceId, status }: Props) {
+export function LifecycleActions({ deviceId, status, isTse = false }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [busy, setBusy] = useState<string | null>(null)
@@ -105,17 +107,19 @@ export function LifecycleActions({ deviceId, status }: Props) {
           : <ArrowDownToLine className="h-4 w-4 mr-1.5" />}
         Vom Kunden abgeholt
       </Button>,
-      <Button
-        key="zur-reparatur-einsatz"
-        variant="secondary"
-        onClick={() => callReturnRpc('in_reparatur', 'Kasse zur Service-Reparatur entgegennehmen?')}
-        disabled={busy !== null}
-      >
-        {busy === 'in_reparatur'
-          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          : <Send className="h-4 w-4 mr-1.5" />}
-        Zur Reparatur
-      </Button>,
+      ...(isTse ? [] : [
+        <Button
+          key="zur-reparatur-einsatz"
+          variant="secondary"
+          onClick={() => callReturnRpc('in_reparatur', 'Kasse zur Service-Reparatur entgegennehmen?')}
+          disabled={busy !== null}
+        >
+          {busy === 'in_reparatur'
+            ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            : <Send className="h-4 w-4 mr-1.5" />}
+          Zur Reparatur
+        </Button>,
+      ]),
       <Button
         key="ausmustern-einsatz"
         variant="outline"
@@ -127,21 +131,35 @@ export function LifecycleActions({ deviceId, status }: Props) {
     )
   }
 
-  // Verkauft: Service-Reparatur möglich (Eigentum bleibt beim Kunden)
+  // Verkauft: Service-Reparatur möglich (Eigentum bleibt beim Kunden).
+  // TSE: keine Reparatur — Tausch heißt direkt ausmustern.
   if (status === 'verkauft') {
-    buttons.push(
-      <Button
-        key="rep-start-verkauft"
-        variant="secondary"
-        onClick={() => callReturnRpc('in_reparatur', 'Verkauftes Gerät zur Service-Reparatur entgegennehmen?')}
-        disabled={busy !== null}
-      >
-        {busy === 'in_reparatur'
-          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          : <Send className="h-4 w-4 mr-1.5" />}
-        Zur Reparatur
-      </Button>,
-    )
+    if (isTse) {
+      buttons.push(
+        <Button
+          key="ausmustern-verkauft-tse"
+          variant="outline"
+          onClick={() => callReturnRpc('ausgemustert', 'TSE getauscht? Wird endgültig ausgemustert.')}
+          disabled={busy !== null}
+        >
+          <Archive className="h-4 w-4 mr-1.5" /> Ausmustern (Tausch)
+        </Button>,
+      )
+    } else {
+      buttons.push(
+        <Button
+          key="rep-start-verkauft"
+          variant="secondary"
+          onClick={() => callReturnRpc('in_reparatur', 'Verkauftes Gerät zur Service-Reparatur entgegennehmen?')}
+          disabled={busy !== null}
+        >
+          {busy === 'in_reparatur'
+            ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            : <Send className="h-4 w-4 mr-1.5" />}
+          Zur Reparatur
+        </Button>,
+      )
+    }
   }
 
   // In Reparatur: zurück (verkauft → verkauft, sonst → lager) oder ausmustern.
@@ -170,20 +188,25 @@ export function LifecycleActions({ deviceId, status }: Props) {
     )
   }
 
-  // Defekt im Lager: Reparatur veranlassen oder ausmustern
+  // Defekt im Lager: Reparatur veranlassen oder ausmustern.
+  // TSE: keine Reparatur — nur ausmustern.
   if (status === 'defekt') {
+    if (!isTse) {
+      buttons.push(
+        <Button
+          key="rep-start"
+          variant="secondary"
+          onClick={() => callReturnRpc('in_reparatur', 'Gerät in die Werkstatt geben?')}
+          disabled={busy !== null}
+        >
+          {busy === 'in_reparatur'
+            ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            : <Send className="h-4 w-4 mr-1.5" />}
+          Reparatur starten
+        </Button>,
+      )
+    }
     buttons.push(
-      <Button
-        key="rep-start"
-        variant="secondary"
-        onClick={() => callReturnRpc('in_reparatur', 'Gerät in die Werkstatt geben?')}
-        disabled={busy !== null}
-      >
-        {busy === 'in_reparatur'
-          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          : <Send className="h-4 w-4 mr-1.5" />}
-        Reparatur starten
-      </Button>,
       <Button
         key="ausmustern-defekt"
         variant="outline"

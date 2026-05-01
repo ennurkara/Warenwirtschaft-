@@ -79,6 +79,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
 
   const modelName = device.model?.modellname ?? '—'
   const categoryName = device.model?.category?.name ?? '—'
+  const isTse = device.model?.category?.name === 'TSE Swissbit'
   const manufacturerName = device.model?.manufacturer?.name ?? '—'
   const serialDisplay = device.serial_number ?? '—'
   const ek = device.purchase_item ? formatCurrency(Number(device.purchase_item.ek_preis)) : null
@@ -134,7 +135,7 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
             <h3>Aktionen</h3>
           </div>
           <div className="px-[18px] py-3">
-            <LifecycleActions deviceId={device.id} status={device.status} />
+            <LifecycleActions deviceId={device.id} status={device.status} isTse={isTse} />
           </div>
         </div>
       )}

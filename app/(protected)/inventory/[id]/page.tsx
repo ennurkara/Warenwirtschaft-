@@ -19,10 +19,16 @@ interface DetailFieldProps {
 }
 
 function DetailField({ label, value, mono }: DetailFieldProps) {
+  // min-w-0 + break-all damit lange Werte (z.B. 64-Hex TSE-Seriennummer) in
+  // engen Grid-Spalten umbrechen statt die Nachbarspalte zu ueberlagern.
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 min-w-0">
       <span className="kb-label">{label}</span>
-      <span className={`text-[13.5px] text-[var(--ink)] ${mono ? 'font-mono tabular-nums' : ''}`}>
+      <span
+        className={`text-[13.5px] text-[var(--ink)] min-w-0 ${
+          mono ? 'font-mono tabular-nums break-all' : 'break-words'
+        }`}
+      >
         {value}
       </span>
     </div>
@@ -97,12 +103,12 @@ export default async function DeviceDetailPage({ params }: { params: { id: strin
           Zurück zum Inventar
         </Link>
         <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-end">
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="kb-label mb-1.5">
               {categoryName} · {manufacturerName}
             </div>
             <h1 className="kb-h1">{modelName}</h1>
-            <div className="text-[13px] text-[var(--ink-3)] mt-1 font-mono">
+            <div className="text-[13px] text-[var(--ink-3)] mt-1 font-mono break-all">
               {serialDisplay}
             </div>
           </div>

@@ -94,20 +94,32 @@ export function LifecycleActions({ deviceId, status, isTse = false }: Props) {
 
   // Im Einsatz: permanent beim Kunden installiert. Kasse kann nur via
   // Vertragsende abgeholt, zur Reparatur eingesendet oder ausgemustert werden.
+  // TSE: kann ausschließlich ausgemustert werden (Tausch-Workflow).
   if (status === 'im_einsatz') {
-    buttons.push(
-      <Button
-        key="abgeholt"
-        variant="secondary"
-        onClick={() => callReturnRpc('lager', 'Kasse vom Kunden abgeholt (z.B. Vertragsende)? Wandert ins Lager.')}
-        disabled={busy !== null}
-      >
-        {busy === 'lager'
-          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          : <ArrowDownToLine className="h-4 w-4 mr-1.5" />}
-        Vom Kunden abgeholt
-      </Button>,
-      ...(isTse ? [] : [
+    if (isTse) {
+      buttons.push(
+        <Button
+          key="ausmustern-einsatz-tse"
+          variant="outline"
+          onClick={() => callReturnRpc('ausgemustert', 'TSE getauscht? Wird endgültig ausgemustert.')}
+          disabled={busy !== null}
+        >
+          <Archive className="h-4 w-4 mr-1.5" /> Ausmustern (Tausch)
+        </Button>,
+      )
+    } else {
+      buttons.push(
+        <Button
+          key="abgeholt"
+          variant="secondary"
+          onClick={() => callReturnRpc('lager', 'Kasse vom Kunden abgeholt (z.B. Vertragsende)? Wandert ins Lager.')}
+          disabled={busy !== null}
+        >
+          {busy === 'lager'
+            ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            : <ArrowDownToLine className="h-4 w-4 mr-1.5" />}
+          Vom Kunden abgeholt
+        </Button>,
         <Button
           key="zur-reparatur-einsatz"
           variant="secondary"
@@ -119,16 +131,16 @@ export function LifecycleActions({ deviceId, status, isTse = false }: Props) {
             : <Send className="h-4 w-4 mr-1.5" />}
           Zur Reparatur
         </Button>,
-      ]),
-      <Button
-        key="ausmustern-einsatz"
-        variant="outline"
-        onClick={() => callReturnRpc('ausgemustert', 'Kasse endgültig ausmustern? Kann nicht zurückgesetzt werden.')}
-        disabled={busy !== null}
-      >
-        <Archive className="h-4 w-4 mr-1.5" /> Ausmustern
-      </Button>,
-    )
+        <Button
+          key="ausmustern-einsatz"
+          variant="outline"
+          onClick={() => callReturnRpc('ausgemustert', 'Kasse endgültig ausmustern? Kann nicht zurückgesetzt werden.')}
+          disabled={busy !== null}
+        >
+          <Archive className="h-4 w-4 mr-1.5" /> Ausmustern
+        </Button>,
+      )
+    }
   }
 
   // Verkauft: Service-Reparatur möglich (Eigentum bleibt beim Kunden).
